@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,15 +31,23 @@ fun LandingScreen(
     navController: NavController,
     onViewProfile: () -> Unit,
     onLogout: () -> Unit,
-    onMovieListClick: () -> Unit,
     onFavoritesClick: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var selectedCategory by remember { mutableStateOf("Popular") }
-    val movieList = remember { mutableStateListOf<MovieItem>() }
-
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    val popularMovies = remember { mutableStateListOf<MovieItem>() }
+    val topRatedMovies = remember { mutableStateListOf<MovieItem>() }
+    val nowPlayingMovies = remember { mutableStateListOf<MovieItem>() }
+    val upcomingMovies = remember { mutableStateListOf<MovieItem>() }
+
+    LaunchedEffect(Unit) {
+        fetchMovies("Popular", popularMovies, context, scope)
+        fetchMovies("Top Rated", topRatedMovies, context, scope)
+        fetchMovies("Now Playing", nowPlayingMovies, context, scope)
+        fetchMovies("Upcoming", upcomingMovies, context, scope)
+    }
 
     Scaffold(
         topBar = {
@@ -49,8 +58,7 @@ fun LandingScreen(
                         IconButton(onClick = { expanded = !expanded }) {
                             Icon(
                                 painter = painterResource(
-                                    id = if (expanded) R.drawable.arrow_drop_up
-                                    else R.drawable.arrow_drop_down
+                                    id = if (expanded) R.drawable.arrow_drop_up else R.drawable.arrow_drop_down
                                 ),
                                 contentDescription = null
                             )
@@ -76,51 +84,48 @@ fun LandingScreen(
                             DropdownMenuItem(
                                 onClick = {
                                     expanded = false
-                                    onFavoritesClick() // Navigate to favorites
+                                    onFavoritesClick()
                                 },
                                 text = { Text("My Favorites") }
                             )
-                            listOf("Popular", "Top Rated", "Now Playing", "Upcoming").forEach { category ->
-                                DropdownMenuItem(
-                                    text = { Text(category) },
-                                    onClick = {
-                                        selectedCategory = category
-                                        expanded = false
-                                        fetchMovies(category, movieList, context, scope)
-                                    }
-                                )
-                            }
                         }
                     }
                 }
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-            ) {
-                items(movieList) { movie ->
-                    MovieItemView(movie = movie) {
-                        navController.navigate("movieDetail/${movie.id}")
-                    }
-                }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            // Popular Section
+            item {
+                SectionHeader(title = "Popular")
+                MovieCarousel(movies = popularMovies, navController = navController)
             }
 
-            // Button for navigating to the movie list
-            Button(
-                onClick = onMovieListClick,
-                modifier = Modifier
-                    .padding(16.dp)
-                    .align(Alignment.BottomCenter)
-            ) {
-                Text("Go to Movie List")
+            // Top Rated Section
+            item {
+                SectionHeader(title = "Top Rated")
+                MovieCarousel(movies = topRatedMovies, navController = navController)
+            }
+
+            // Now Playing Section
+            item {
+                SectionHeader(title = "Now Playing")
+                MovieCarousel(movies = nowPlayingMovies, navController = navController)
+            }
+
+            // Upcoming Section
+            item {
+                SectionHeader(title = "Upcoming")
+                MovieCarousel(movies = upcomingMovies, navController = navController)
             }
         }
     }
 }
+
 
 fun fetchMovies(
     category: String,
@@ -128,21 +133,29 @@ fun fetchMovies(
     context: Context,
     scope: CoroutineScope
 ) {
-    // Retrieve the API key from AndroidManifest metadata
-    val apiKey = context.packageManager.getApplicationInfo(
-        context.packageName,
-        PackageManager.GET_META_DATA
-    ).metaData.getString("com.movieviewer.API_KEY.233000D")
+    val apiKey = try {
+        context.packageManager.getApplicationInfo(
+            context.packageName,
+            PackageManager.GET_META_DATA
+        ).metaData?.getString("com.movieviewer.API_KEY.233000D")
+    } catch (e: Exception) {
+        null
+    }
 
-    val apiService = RetrofitInstance.getApiService() // Instance of TMDBApiService
+    if (apiKey.isNullOrBlank()) {
+        Toast.makeText(context, "API key not found", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    val apiService = RetrofitInstance.getApiService()
     movieList.clear()
     scope.launch {
         try {
             val response = when (category) {
-                "Popular" -> apiService.getPopularMovies(apiKey!!)
-                "Top Rated" -> apiService.getTopRatedMovies(apiKey!!)
-                "Now Playing" -> apiService.getNowPlayingMovies(apiKey!!)
-                "Upcoming" -> apiService.getUpcomingMovies(apiKey!!)
+                "Popular" -> apiService.getPopularMovies(apiKey)
+                "Top Rated" -> apiService.getTopRatedMovies(apiKey)
+                "Now Playing" -> apiService.getNowPlayingMovies(apiKey)
+                "Upcoming" -> apiService.getUpcomingMovies(apiKey)
                 else -> null
             }
             response?.results?.let { movieList.addAll(it) }
@@ -152,27 +165,54 @@ fun fetchMovies(
     }
 }
 
-// Display individual movie items
 @Composable
-fun MovieItemView(movie: MovieItem, onClick: () -> Unit) {
-    Row(
+fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleLarge,
         modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    )
+}
+
+@Composable
+fun MovieCarousel(movies: List<MovieItem>, navController: NavController) {
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(movies) { movie ->
+            MovieCard(movie = movie) {
+                navController.navigate("movieDetail/${movie.id}")
+            }
+        }
+    }
+}
+
+@Composable
+fun MovieCard(movie: MovieItem, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .width(120.dp)
             .clickable(onClick = onClick)
-            .padding(8.dp)
+            .padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Image(
             painter = rememberAsyncImagePainter("https://image.tmdb.org/t/p/w500${movie.poster_path}"),
             contentDescription = movie.title,
-            modifier = Modifier.size(100.dp)
+            modifier = Modifier
+                .height(180.dp)
+                .fillMaxWidth()
         )
-        Spacer(modifier = Modifier.width(8.dp))
-        Column {
-            Text(text = movie.title, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                text = movie.overview,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 3
-            )
-        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = movie.title,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 3
+        )
     }
 }

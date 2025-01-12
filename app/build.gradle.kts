@@ -70,7 +70,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.navigation.runtime.ktx)
-    implementation(libs.androidx.navigation.compose) // Add this line
+    implementation(libs.androidx.navigation.compose)
     kapt(libs.androidx.room.compiler.v250)
 
     // Retrofit dependencies
@@ -90,4 +90,7 @@ dependencies {
     // Debug dependencies
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Web Scraping
+    implementation (libs.jsoup)
 }

@@ -109,7 +109,6 @@ fun MovieViewerApp() {
                             popUpTo("landing") { inclusive = true }
                         }
                     },
-                    onMovieListClick = { navController.navigate("movieList") },
                     onFavoritesClick = { navController.navigate("favorites") }
                 )
             }

@@ -3,7 +3,7 @@ package com.it2161.dit233000D.movieviewer.data
 data class MovieItem(
     val adult: Boolean = true,
     val backdrop_path: String?,
-    val belongs_to_collection: String? = null,
+    val belongs_to_collection: BelongsToCollection? = null, // Updated here
     val budget: Int = 0,
     val genres: List<Genre>,
     val homepage: String?,
@@ -55,6 +55,19 @@ data class MovieResponse(
     val results: List<MovieItem>
 )
 
-// ReviewResponse Data Class
-data class ReviewResponse(val results: List<Review>)
-data class Review(val author: String, val content: String)
+data class BelongsToCollection(
+    val id: Int,
+    val name: String,
+    val poster_path: String?,
+    val backdrop_path: String?
+)
+
+// ReviewResponse and Review Data Classes
+data class ReviewResponse(
+    val results: List<Review>
+)
+
+data class Review(
+    val author: String,
+    val content: String
+)
