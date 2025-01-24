@@ -1,5 +1,6 @@
 package com.it2161.dit233000D.movieviewer.ui.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,15 +10,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import android.content.Context
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
-import com.it2161.dit233000D.movieviewer.data.UserProfile
+import com.it2161.dit233000D.movieviewer.data.user.UserProfile
 import com.it2161.dit233000D.movieviewer.R
+import com.it2161.dit233000D.movieviewer.data.movie.MovieDao
+import com.it2161.dit233000D.movieviewer.data.movie.MovieDatabase
+import com.it2161.dit233000D.movieviewer.data.user.UserDatabase
 
 import java.util.Calendar
 
@@ -25,7 +31,7 @@ import java.util.Calendar
 fun RegisterUserScreen(
     navController: NavController,
     userProfile: UserProfile,
-    userProfileChange: (UserProfile) -> Unit
+    userProfileChange: (UserProfile) -> Unit,
 ) {
     var userName by remember { mutableStateOf(userProfile.userName) }
     var password by remember { mutableStateOf(userProfile.password) }
@@ -43,8 +49,10 @@ fun RegisterUserScreen(
     val years = (1920..Calendar.getInstance().get(Calendar.YEAR)).toList()
     val context = LocalContext.current
 
-    val sharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-    val editor = sharedPreferences.edit()
+    val db = UserDatabase.getDatabase(context)
+    val userProfileDao = db.userProfileDao()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
 
     // red messages
     fun validateField(fieldName: String, value: String): String? {
@@ -70,52 +78,6 @@ fun RegisterUserScreen(
             "yob" -> if (value.isEmpty()) "Year of birth selection is required" else null
             "preferredName" -> if (value.isEmpty()) "Preferred name is optional" else null
             else -> null
-        }
-    }
-
-    fun handleRegister() {
-        var isValid = true
-
-        if (userName.isEmpty()) {
-            Toast.makeText(context, "Username is required", Toast.LENGTH_SHORT).show()
-            isValid = false
-        }
-        if (password.isEmpty()) {
-            Toast.makeText(context, "Password is required", Toast.LENGTH_SHORT).show()
-            isValid = false
-        }
-        if (confirmPassword.isEmpty()) {
-            Toast.makeText(context, "Confirm Password is required", Toast.LENGTH_SHORT).show()
-            isValid = false
-        }
-        if (yob.isEmpty()) {
-            Toast.makeText(context, "Year of birth selection is required", Toast.LENGTH_SHORT).show()
-            isValid = false
-        }
-
-        if (errorMessageUsername != null ||
-            errorMessagePassword != null ||
-            errorMessageConfirmPassword != null ||
-            errorMessageYob != null ||
-            errorMessagePreferredName != null
-        ) {
-            Toast.makeText(context, "Please make sure to correct the format of required fields in the form", Toast.LENGTH_SHORT).show()
-            isValid = false
-        }
-
-        if (isValid) {
-            with (editor) {
-                putString("userName", userName)
-                putString("password", password)
-                putString("yob", yob)
-                putBoolean("updates", updates)
-                putString("preferredName", preferredName)
-                apply()
-            }
-        }
-
-        if (isValid) {
-            navController.navigate("landing")
         }
     }
 
@@ -280,7 +242,74 @@ fun RegisterUserScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { handleRegister() },
+                onClick = {
+                    var isValid = true
+                    if (userName.isEmpty()) {
+                        Toast.makeText(context, "Username is required", Toast.LENGTH_SHORT).show()
+                        isValid = false
+                    }
+                    if (password.isEmpty()) {
+                        Toast.makeText(context, "Password is required", Toast.LENGTH_SHORT).show()
+                        isValid = false
+                    }
+                    if (confirmPassword.isEmpty()) {
+                        Toast.makeText(context, "Confirm Password is required", Toast.LENGTH_SHORT).show()
+                        isValid = false
+                    }
+                    if (yob.isEmpty()) {
+                        Toast.makeText(context, "Year of birth selection is required", Toast.LENGTH_SHORT).show()
+                        isValid = false
+                    }
+
+                    if (errorMessageUsername != null ||
+                        errorMessagePassword != null ||
+                        errorMessageConfirmPassword != null ||
+                        errorMessageYob != null ||
+                        errorMessagePreferredName != null
+                    ) {
+                        Toast.makeText(context, "Please make sure to correct the format of required fields in the form", Toast.LENGTH_SHORT).show()
+                        isValid = false
+                    }
+
+                    if (isValid) {
+                        val newUserProfile = UserProfile(
+                            userName = userName,
+                            password = password,
+                            confirmPassword = "",
+                            updates = updates,
+                            avatar = R.drawable.avatar_1,
+                            yob = yob,
+                            preferredName = preferredName
+                        )
+
+                        // Coroutine to handle user registration and related tasks
+                        lifecycleOwner.lifecycleScope.launch {
+                            // Check if it's a new user (async operation in background)
+                            val isNewUser = userProfileDao.getUserByUserName(newUserProfile.userName) == null
+
+                            val movieDao = MovieDatabase.getDatabase(context).movieDao()
+
+
+                            // Insert user into the database
+                            userProfileDao.insertUser(newUserProfile)
+
+                            // Show success message
+                            Toast.makeText(context, "Registration successful!", Toast.LENGTH_SHORT).show()
+
+                            // Fetch the user after insertion to check persistence
+                            val fetchedUser = userProfileDao.getUserByUserName(newUserProfile.userName)
+
+                            if (fetchedUser != null) {
+                                Log.d("RegisterUserScreen", "User persisted: ${fetchedUser.userName}")
+                            } else {
+                                Log.d("RegisterUserScreen", "User not found after insert.")
+                            }
+
+                            // Navigate to the landing page
+                            navController.navigate("landing")
+                        }
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("Register")
@@ -300,3 +329,4 @@ fun RegisterUserScreen(
         }
     }
 }
+

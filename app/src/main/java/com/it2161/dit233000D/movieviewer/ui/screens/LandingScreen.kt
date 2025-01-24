@@ -8,6 +8,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,7 +24,7 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.it2161.dit233000D.movieviewer.R
 import com.it2161.dit233000D.movieviewer.api.RetrofitInstance
-import com.it2161.dit233000D.movieviewer.data.MovieItem
+import com.it2161.dit233000D.movieviewer.data.movie.MovieItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -42,11 +45,22 @@ fun LandingScreen(
     val nowPlayingMovies = remember { mutableStateListOf<MovieItem>() }
     val upcomingMovies = remember { mutableStateListOf<MovieItem>() }
 
+    var searchQuery by remember { mutableStateOf("") }
+    val searchResults = remember { mutableStateListOf<MovieItem>() }
+
+    // Fetch movies on initial launch
     LaunchedEffect(Unit) {
         fetchMovies("Popular", popularMovies, context, scope)
         fetchMovies("Top Rated", topRatedMovies, context, scope)
         fetchMovies("Now Playing", nowPlayingMovies, context, scope)
         fetchMovies("Upcoming", upcomingMovies, context, scope)
+    }
+
+    // Search movie updates based on search query
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isNotBlank()) {
+            searchMovies(searchQuery, searchResults, context, scope)
+        }
     }
 
     Scaffold(
@@ -94,34 +108,88 @@ fun LandingScreen(
             )
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            // Popular Section
-            item {
-                SectionHeader(title = "Popular")
-                MovieCarousel(movies = popularMovies, navController = navController)
-            }
+        Column(modifier = Modifier.padding(padding)) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Search for movies") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp)
+            )
+            if (searchResults.isNotEmpty()) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3), // 3 columns
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(8.dp), // optional padding around the grid
+                    verticalArrangement = Arrangement.spacedBy(8.dp), // optional space between rows
+                    horizontalArrangement = Arrangement.spacedBy(8.dp) // optional space between columns
+                ) {
+                    items(searchResults) { movie ->
+                        MovieCard(movie = movie) {
+                            navController.navigate("movieDetail/${movie.id}")
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                ) {
+                    item {
+                        SectionHeader(title = "Popular")
+                        MovieCarousel(movies = popularMovies, navController = navController)
+                    }
 
-            // Top Rated Section
-            item {
-                SectionHeader(title = "Top Rated")
-                MovieCarousel(movies = topRatedMovies, navController = navController)
-            }
+                    item {
+                        SectionHeader(title = "Top Rated")
+                        MovieCarousel(movies = topRatedMovies, navController = navController)
+                    }
 
-            // Now Playing Section
-            item {
-                SectionHeader(title = "Now Playing")
-                MovieCarousel(movies = nowPlayingMovies, navController = navController)
-            }
+                    item {
+                        SectionHeader(title = "Now Playing")
+                        MovieCarousel(movies = nowPlayingMovies, navController = navController)
+                    }
 
-            // Upcoming Section
-            item {
-                SectionHeader(title = "Upcoming")
-                MovieCarousel(movies = upcomingMovies, navController = navController)
+                    item {
+                        SectionHeader(title = "Upcoming")
+                        MovieCarousel(movies = upcomingMovies, navController = navController)
+                    }
+                }
             }
+        }
+    }
+}
+
+fun searchMovies(
+    query: String,
+    searchResults: SnapshotStateList<MovieItem>,
+    context: Context,
+    scope: CoroutineScope
+) {
+    val apiKey = try {
+        context.packageManager.getApplicationInfo(
+            context.packageName,
+            PackageManager.GET_META_DATA
+        ).metaData?.getString("com.movieviewer.API_KEY.233000D")
+    } catch (e: Exception) {
+        null
+    }
+
+    if (apiKey.isNullOrBlank()) {
+        Toast.makeText(context, "API key not found", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    val apiService = RetrofitInstance.getApiService()
+    searchResults.clear()
+    scope.launch {
+        try {
+            val response = apiService.searchMovies(apiKey, query)
+            response?.results?.let { searchResults.addAll(it) }
+        } catch (e: Exception) {
+            Toast.makeText(context, "Failed to fetch search results: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 }

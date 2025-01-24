@@ -19,32 +19,26 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.it2161.dit233000D.movieviewer.R
-import com.it2161.dit233000D.movieviewer.data.UserProfile
+import com.it2161.dit233000D.movieviewer.data.user.UserProfile
+import com.it2161.dit233000D.movieviewer.data.user.UserProfileDao
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
     onLoginSuccess: (UserProfile) -> Unit,
-    onRegister: () -> Unit
+    onRegister: () -> Unit,
+    userProfileDao: UserProfileDao
 ) {
     val context = LocalContext.current
-    val sharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-
-    val savedUserName = sharedPreferences.getString("userName", "TestUser1")
-    val savedPassword = sharedPreferences.getString("password", "TestPassword1")
-    val savedPreferredName = sharedPreferences.getString("preferredName", "John Doe") // Fetch preferred name
-
-    Log.d(
-        "LoginScreen",
-        "Saved User Data: userName: $savedUserName, password: $savedPassword, preferredName: $savedPreferredName"
-    )
+    val scope = rememberCoroutineScope()  // To launch coroutines
 
     var userId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var preferredName by remember { mutableStateOf("") }  // Preferred name state
+    var preferredName by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var errorMessageUsername by remember { mutableStateOf<String?>(null) }
     var errorMessagePassword by remember { mutableStateOf<String?>(null) }
-    var errorMessagePreferredName by remember { mutableStateOf<String?>(null) }  // Preferred name error
+    var errorMessagePreferredName by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -150,11 +144,7 @@ fun LoginScreen(
 
             Button(
                 onClick = {
-                    // debugging
-                    Log.d(
-                        "LoginScreen",
-                        "Attempting login with userName: $userId and password: $password"
-                    )
+                    Log.d("LoginScreen", "Attempting login with userName: $userId and password: $password")
 
                     if (userId.isEmpty()) {
                         errorMessageUsername = "Username cannot be empty"
@@ -179,20 +169,13 @@ fun LoginScreen(
                     }
 
                     if (errorMessageUsername == null && errorMessagePassword == null && errorMessagePreferredName == null) {
-                        val isValidUser = (userId == savedUserName) && password == savedPassword
-                        if (isValidUser) {
-                            val loggedInUser = UserProfile(
-                                userName = userId,
-                                password = password,
-                                preferredName = preferredName // Store the preferred name
-                            )
-                            onLoginSuccess(loggedInUser)
-                        } else {
-                            Toast.makeText(
-                                context,
-                                "Invalid credentials entered. Please try again.",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                        scope.launch {
+                            val user = userProfileDao.getUserByUserName(userId)
+                            if (user != null && user.password == password) {
+                                onLoginSuccess(user)
+                            } else {
+                                Toast.makeText(context, "Invalid credentials entered. Please try again.", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                 },

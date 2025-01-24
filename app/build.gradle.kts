@@ -72,6 +72,10 @@ dependencies {
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.navigation.compose)
     kapt(libs.androidx.room.compiler.v250)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    kapt("androidx.room:room-compiler:2.6.1")
+    implementation(libs.gson)
 
     // Retrofit dependencies
     implementation(libs.retrofit)

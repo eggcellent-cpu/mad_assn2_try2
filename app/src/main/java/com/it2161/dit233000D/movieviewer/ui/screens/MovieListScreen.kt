@@ -1,5 +1,8 @@
 package com.it2161.dit233000D.movieviewer.ui.screens
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -12,12 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import coil.compose.rememberAsyncImagePainter
 import com.it2161.dit233000D.movieviewer.api.RetrofitInstance
-import com.it2161.dit233000D.movieviewer.data.MovieItem
+import com.it2161.dit233000D.movieviewer.data.movie.MovieItem
+import com.it2161.dit233000D.movieviewer.data.movie.MovieRepository
+import com.it2161.dit233000D.movieviewer.utils.isNetworkAvailable
 import kotlinx.coroutines.launch
 
 @Composable
@@ -45,17 +47,23 @@ fun MovieListScreen(navController: NavController) {
         return
     }
 
-    // Fetch movie list based on selected category
+    // Fetch movies based on selected category
     fun fetchMovies() {
         scope.launch {
             try {
-                val movieResponse = when (selectedTab.value) {
-                    "popular" -> RetrofitInstance.getApiService().getPopularMovies(apiKey)
-                    "toprated" -> RetrofitInstance.getApiService().getTopRatedMovies(apiKey)
-                    "nowplaying" -> RetrofitInstance.getApiService().getNowPlayingMovies(apiKey)
-                    else -> RetrofitInstance.getApiService().getUpcomingMovies(apiKey)
+                val repository = MovieRepository.getInstance(context)
+
+                // Check network connectivity
+                if (isNetworkAvailable(context)) {
+                    val movies = repository.getMovies(context, apiKey, selectedTab.value)
+
+                    movieList.value = movies
+                } else {
+                    // Fetch from the local database if offline
+                    val localMovies = repository.getMovies(context, apiKey, selectedTab.value)
+                    movieList.value = localMovies
+                    Toast.makeText(context, "Offline Mode: Displaying cached data", Toast.LENGTH_SHORT).show()
                 }
-                movieList.value = movieResponse.results
             } catch (e: Exception) {
                 Toast.makeText(context, "Failed to fetch movies: ${e.message}", Toast.LENGTH_SHORT).show()
             }
@@ -92,15 +100,12 @@ fun MovieListScreen(navController: NavController) {
     }
 }
 
+
 @Composable
 fun MovieItemCard(
     movie: MovieItem,
     navController: NavController,
 ) {
-    val context = LocalContext.current
-    val isFavorite = remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-
     Column(modifier = Modifier
         .padding(8.dp)
         .clickable {
