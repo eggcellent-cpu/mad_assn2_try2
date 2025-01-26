@@ -1,6 +1,5 @@
 package com.it2161.dit233000D.movieviewer
 
-import FavoriteMoviesViewModel
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -23,6 +22,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.it2161.dit233000D.movieviewer.api.RetrofitInstance
 import com.it2161.dit233000D.movieviewer.data.movie.MovieItem
+import com.it2161.dit233000D.movieviewer.data.movie.MovieRepository
 import com.it2161.dit233000D.movieviewer.data.user.UserDatabase
 import com.it2161.dit233000D.movieviewer.data.user.UserProfile
 import com.it2161.dit233000D.movieviewer.data.user.UserProfileDao
@@ -34,6 +34,8 @@ import com.it2161.dit233000D.movieviewer.ui.screens.MovieListScreen
 import com.it2161.dit233000D.movieviewer.ui.screens.ProfileScreen
 import com.it2161.dit233000D.movieviewer.ui.screens.RegisterUserScreen
 import com.it2161.dit233000D.movieviewer.ui.theme._233000DMovieViewer2Theme
+import com.it2161.dit233000D.movieviewer.viewmodel.FavoriteMovieViewModel
+import com.it2161.dit233000D.movieviewer.viewmodel.FavoriteMovieViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,7 +110,6 @@ fun MovieViewerApp() {
             }
 
             composable("movieDetail/{movieId}") { backStackEntry ->
-                // Directly get the movieId as a string from the back stack entry
                 val movieId = backStackEntry.arguments?.getString("movieId")?.toLongOrNull()
 
                 if (movieId != null) {
@@ -116,8 +117,8 @@ fun MovieViewerApp() {
                     val app = context.applicationContext as MovieViewerApplication
                     val repository = app.movieRepository
 
-                    val viewModel: FavoriteMoviesViewModel = viewModel(
-                        factory = FavoriteMoviesViewModel.provideFactory(repository)
+                    val viewModel: FavoriteMovieViewModel = viewModel(
+                        factory = FavoriteMovieViewModelFactory(repository)
                     )
 
                     // State to handle loading and error
@@ -131,7 +132,7 @@ fun MovieViewerApp() {
                                 .getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
                                 .metaData.getString("com.movieviewer.API_KEY.233000D")
 
-                            if (movieId != null) {
+                            if (!apiKey.isNullOrBlank()) {
                                 // Make the API call and update the movie details
                                 movieDetails = RetrofitInstance.getApiService().getMovieDetails(movieId, apiKey!!)
                             } else {
@@ -152,7 +153,8 @@ fun MovieViewerApp() {
                         MovieDetailScreen(
                             movieId = movieId, // Directly use movieId as Long
                             navController = navController,
-                        )
+                            repository = repository,
+                            userProfile = currentUser ?: UserProfile(),                        )
                     } else {
                         // While loading
                         Text(text = "Loading movie details...")
@@ -164,7 +166,14 @@ fun MovieViewerApp() {
 
             composable("favorites") {
                 val context = LocalContext.current  // Get the current context
-                FavoriteMovieScreen(navController = navController, context = context)
+                FavoriteMovieScreen(
+                    navController = navController,
+                    context = context,
+                    userProfile = currentUser,
+                    onMovieClick = { movieId ->
+                        navController.navigate("movieDetail/$movieId")
+                    }
+                )
             }
 
         }

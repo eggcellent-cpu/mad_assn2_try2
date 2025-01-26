@@ -24,6 +24,8 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.it2161.dit233000D.movieviewer.R
 import com.it2161.dit233000D.movieviewer.api.RetrofitInstance
+import com.it2161.dit233000D.movieviewer.data.movie.MovieDao
+import com.it2161.dit233000D.movieviewer.data.movie.MovieDatabase
 import com.it2161.dit233000D.movieviewer.data.movie.MovieItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -45,15 +47,17 @@ fun LandingScreen(
     val nowPlayingMovies = remember { mutableStateListOf<MovieItem>() }
     val upcomingMovies = remember { mutableStateListOf<MovieItem>() }
 
+    val movieDao = MovieDatabase.getDatabase(context).movieDao()
+
     var searchQuery by remember { mutableStateOf("") }
     val searchResults = remember { mutableStateListOf<MovieItem>() }
 
     // Fetch movies on initial launch
     LaunchedEffect(Unit) {
-        fetchMovies("Popular", popularMovies, context, scope)
-        fetchMovies("Top Rated", topRatedMovies, context, scope)
-        fetchMovies("Now Playing", nowPlayingMovies, context, scope)
-        fetchMovies("Upcoming", upcomingMovies, context, scope)
+        fetchMovies("Popular", popularMovies, context, scope, movieDao)
+        fetchMovies("Top Rated", topRatedMovies, context, scope, movieDao)
+        fetchMovies("Now Playing", nowPlayingMovies, context, scope, movieDao)
+        fetchMovies("Upcoming", upcomingMovies, context, scope, movieDao)
     }
 
     // Search movie updates based on search query
@@ -115,7 +119,7 @@ fun LandingScreen(
                 label = { Text("Search for movies") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp)
+                    .padding(8.dp)
             )
             if (searchResults.isNotEmpty()) {
                 LazyVerticalGrid(
@@ -199,7 +203,8 @@ fun fetchMovies(
     category: String,
     movieList: SnapshotStateList<MovieItem>,
     context: Context,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    movieDao: MovieDao // Pass MovieDao here
 ) {
     val apiKey = try {
         context.packageManager.getApplicationInfo(
@@ -217,8 +222,10 @@ fun fetchMovies(
 
     val apiService = RetrofitInstance.getApiService()
     movieList.clear()
+
     scope.launch {
         try {
+            // Fetch movies from API
             val response = when (category) {
                 "Popular" -> apiService.getPopularMovies(apiKey)
                 "Top Rated" -> apiService.getTopRatedMovies(apiKey)
@@ -226,12 +233,25 @@ fun fetchMovies(
                 "Upcoming" -> apiService.getUpcomingMovies(apiKey)
                 else -> null
             }
-            response?.results?.let { movieList.addAll(it) }
+
+            response?.results?.let { movies ->
+                // Add movies to the UI list
+                movieList.addAll(movies)
+
+                // Save movies to the database
+                movieDao.insertMovies(movies)
+            }
         } catch (e: Exception) {
+            // Handle API fetch failure
             Toast.makeText(context, "Failed to fetch movies: ${e.message}", Toast.LENGTH_SHORT).show()
+
+            // Fallback to retrieve movies from the database
+            val dbMovies = movieDao.getAllMovies()
+            movieList.addAll(dbMovies)
         }
     }
 }
+
 
 @Composable
 fun SectionHeader(title: String) {

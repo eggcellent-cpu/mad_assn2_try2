@@ -3,6 +3,7 @@ package com.it2161.dit233000D.movieviewer.ui.screens
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -13,14 +14,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.it2161.dit233000D.movieviewer.R
 import com.it2161.dit233000D.movieviewer.api.RetrofitInstance
 import com.it2161.dit233000D.movieviewer.data.movie.MovieDatabase
 import com.it2161.dit233000D.movieviewer.data.movie.MovieItem
+import com.it2161.dit233000D.movieviewer.data.movie.MovieRepository
 import com.it2161.dit233000D.movieviewer.data.movie.Review
+import com.it2161.dit233000D.movieviewer.data.movie.toFavoriteMovieItem
+import com.it2161.dit233000D.movieviewer.data.user.UserProfile
 import com.it2161.dit233000D.movieviewer.utils.isNetworkAvailable
+import com.it2161.dit233000D.movieviewer.viewmodel.FavoriteMovieViewModel
+import com.it2161.dit233000D.movieviewer.viewmodel.FavoriteMovieViewModelFactory
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import org.jsoup.Jsoup
 
@@ -28,7 +37,9 @@ import org.jsoup.Jsoup
 @Composable
 fun MovieDetailScreen(
     movieId: Any,
-    navController: NavController
+    navController: NavController,
+    repository: MovieRepository,
+    userProfile: UserProfile?
 ) {
     val movieDetail = remember { mutableStateOf<MovieItem?>(null) }
     val reviews = remember { mutableStateListOf<Review>() }
@@ -43,9 +54,14 @@ fun MovieDetailScreen(
     val totalPages = (reviews.size + reviewsPerPage - 1) / reviewsPerPage
 
     val movieDatabase = MovieDatabase.getDatabase(context)
-
     var similarMovies by remember { mutableStateOf<List<MovieItem>>(emptyList()) }
 
+    val currentUser = userProfile ?: UserProfile(0, "")
+    val isFavorite = remember { mutableStateOf(movieDetail.value?.is_favorite ?: false) }
+
+    val viewModel: FavoriteMovieViewModel = viewModel(
+        factory = FavoriteMovieViewModelFactory(repository)
+    )
 
     // Function to clean HTML tags from review content
     fun cleanHtmlContent(content: String): String {
@@ -72,8 +88,18 @@ fun MovieDetailScreen(
         }
     }
 
-    LaunchedEffect(movieId) {
+    LaunchedEffect(movieId, currentUser.userName) {
         scope.launch {
+            // Validate and convert movie ID
+            val movieIdLong = safeConvertToLong(movieId)
+            if (movieIdLong == null) {
+                errorMessage = "Invalid movie ID format. Unable to load details."
+                return@launch
+            }
+
+            val favoriteMovies = repository.getFavoriteMovies(currentUser.userName).firstOrNull() ?: emptyList()
+            isFavorite.value = favoriteMovies.any { it.id == movieIdLong }
+
             val apiKey = try {
                 context.packageManager.getApplicationInfo(
                     context.packageName,
@@ -84,13 +110,6 @@ fun MovieDetailScreen(
                 }
             } catch (e: Exception) {
                 errorMessage = "Failed to retrieve API key: ${e.message}"
-                return@launch
-            }
-
-            // Validate and convert movie ID
-            val movieIdLong = safeConvertToLong(movieId)
-            if (movieIdLong == null) {
-                errorMessage = "Invalid movie ID format. Unable to load details."
                 return@launch
             }
 
@@ -126,7 +145,6 @@ fun MovieDetailScreen(
                 } else {
                     errorMessage = "Movie details not available offline."
                 }
-
                 offlineMessage = "This feature is unavailable offline."
             }
 
@@ -163,6 +181,30 @@ fun MovieDetailScreen(
                             contentDescription = "Back"
                         )
                     }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        scope.launch {
+                            movieDetail.value?.let { movie ->
+                                val favoriteMovie = movie.toFavoriteMovieItem(currentUser.userName)
+
+                                if (isFavorite.value) {
+                                    viewModel.removeFavoriteMovie(favoriteMovie) // Only pass the movie
+                                } else {
+                                    viewModel.addFavoriteMovie(favoriteMovie) // Only pass the movie
+                                }
+                                isFavorite.value = !isFavorite.value
+                            }
+                        }
+                    }) {
+                        Icon(
+                            painter = painterResource(
+                                if (isFavorite.value) R.drawable.heart_check else R.drawable.favorite
+                            ),
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite.value) Color.Red else Color.Black // Make heart red when favorited
+                        )
+                    }
                 }
             )
         },
@@ -172,7 +214,7 @@ fun MovieDetailScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(16.dp),
+                    .padding(8.dp),
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.Start
             ) {
@@ -183,7 +225,7 @@ fun MovieDetailScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(padding)
-                                .padding(16.dp),
+                                .padding(8.dp),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -207,26 +249,42 @@ fun MovieDetailScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(8.dp),
                                 horizontalArrangement = Arrangement.Start
                             ) {
                                 // Left side: Movie image and rating
                                 Column(
                                     modifier = Modifier
                                         .weight(1.5f)
-                                        .padding(end = 20.dp),
+                                        .padding(end = 18.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    Image(
-                                        painter = rememberAsyncImagePainter("https://image.tmdb.org/t/p/w500${movie.poster_path}"),
-                                        contentDescription = movie.title,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(300.dp) // Adjust height as needed
-                                    )
+                                    val imageUrl = movie.poster_path
+                                    if (imageUrl.isNullOrEmpty()) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(250.dp)
+                                                .background(Color.Gray),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "No image available",
+                                                color = Color.White
+                                            )
+                                        }
+                                    } else {
+                                        Image(
+                                            painter = rememberAsyncImagePainter("https://image.tmdb.org/t/p/w500${movie.poster_path}"),
+                                            contentDescription = movie.title,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(250.dp) // Adjust height as needed
+                                        )
+                                    }
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "Rating: ${movie.vote_average}",
+                                        text = "Rating: ${movie.vote_average ?: "N/A"}",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                 }
@@ -238,41 +296,41 @@ fun MovieDetailScreen(
                                         .fillMaxHeight()
                                 ) {
                                     Text(
-                                        text = movie.title,
+                                        text = movie.title ?: "No title available",
                                         style = MaterialTheme.typography.headlineLarge,
                                         modifier = Modifier.padding(bottom = 10.dp)
                                     )
-                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "Release Date: ${movie.release_date}",
+                                        text = "Release Date: ${movie.release_date ?: "No release date available"}",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
-                                        text = "Adult: ${movie.adult}",
+                                        text = "Adult: ${movie.adult ?: "N/A"}",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
-                                        text = "Runtime: ${movie.runtime} min",
+                                        text = "Runtime: ${movie.runtime ?: "N/A"} min",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
-                                        text = "Vote Average: ${movie.vote_average}",
+                                        text = "Vote Average: ${movie.vote_average ?: "N/A"}",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
-                                        text = "Vote Count: ${movie.vote_count}",
+                                        text = "Vote Count: ${movie.vote_count ?: "N/A"}",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
-                                        text = "Revenue: $${movie.revenue}",
+                                        text = "Revenue: $${movie.revenue ?: "N/A"}",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
-                                        text = "Original Language: ${movie.original_language}",
+                                        text = "Original Language: ${movie.original_language ?: "N/A"}",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
-                                        text = "Genres: ${movie.genres.joinToString(", ") { it.name }}",
+                                        text = "Genres: ${movie.genres?.joinToString(", ") { it.name } ?: "N/A"}",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
@@ -281,7 +339,7 @@ fun MovieDetailScreen(
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                     Text(
-                                        text = movie.overview,
+                                        text = movie.overview ?: "No overview available.",
                                         style = MaterialTheme.typography.bodyMedium,
                                         modifier = Modifier.padding(bottom = 16.dp)
                                     )
@@ -293,11 +351,10 @@ fun MovieDetailScreen(
                             Text(
                                 text = "Similar Movies",
                                 style = MaterialTheme.typography.headlineSmall,
-                                modifier = Modifier.padding(start = 16.dp)
+                                modifier = Modifier.padding(start = 24.dp)
                             )
                             LazyRow(
                                 modifier = Modifier
-                                    .padding(start = 16.dp, end = 16.dp)
                                     .fillMaxWidth()
                             ) {
                                 items(similarMovies) { movie ->
@@ -305,24 +362,42 @@ fun MovieDetailScreen(
                                         modifier = Modifier
                                             .padding(8.dp)
                                             .width(140.dp) // Adjust width as needed
-                                            .clickable { // Add click listener to navigate
+                                            .clickable {
                                                 navController.navigate("movieDetail/${movie.id}")
                                             }
                                     ) {
                                         Column(
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
-                                            Image(
-                                                painter = rememberAsyncImagePainter("https://image.tmdb.org/t/p/w500${movie.poster_path}"),
-                                                contentDescription = movie.title,
-                                                modifier = Modifier
-                                                    .height(200.dp)
-                                                    .fillMaxWidth()
-                                            )
+                                            val movieImageUrl = movie.poster_path
+                                            if (movieImageUrl.isNullOrEmpty()) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .height(200.dp)
+                                                        .fillMaxWidth()
+                                                        .background(Color.Gray),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text(
+                                                        text = "No image",
+                                                        color = Color.White
+                                                    )
+                                                }
+                                            } else {
+                                                Image(
+                                                    painter = rememberAsyncImagePainter("https://image.tmdb.org/t/p/w500${movie.poster_path}"),
+                                                    contentDescription = movie.title,
+                                                    modifier = Modifier
+                                                        .height(200.dp)
+                                                        .fillMaxWidth()
+                                                )
+                                            }
+
+                                            // Movie Title Text
                                             Text(
-                                                text = movie.title,
+                                                text = movie.title ?: "No title",
                                                 style = MaterialTheme.typography.bodySmall,
-                                                modifier = Modifier.padding(8.dp)
+                                                modifier = Modifier.padding(12.dp)
                                             )
                                         }
                                     }
@@ -350,13 +425,13 @@ fun MovieDetailScreen(
                                     LazyColumn(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .weight(1f)
+                                            .weight(2f)
                                     ) {
                                         items(reviews.chunked(reviewsPerPage).getOrNull(currentPage - 1) ?: emptyList()) { review ->
                                             Card(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .padding(vertical = 4.dp),
+                                                    .padding(vertical = 8.dp),
                                                 elevation = CardDefaults.elevatedCardElevation()
                                             ) {
                                                 Column(modifier = Modifier.padding(8.dp)) {
@@ -407,6 +482,12 @@ fun MovieDetailScreen(
                                 TextButton(onClick = { showAllReviews = !showAllReviews }) {
                                     Text(text = if (showAllReviews) "Hide All Reviews" else "Read All Reviews")
                                 }
+                            } else {
+                                Text(
+                                    text = "No reviews available.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(16.dp)
+                                )
                             }
                         }
                     } ?: run {

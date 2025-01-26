@@ -1,6 +1,5 @@
 package com.it2161.dit233000D.movieviewer.data.movie
 
-import android.util.Log
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -21,18 +20,11 @@ interface MovieDao {
 
     // Get a movie by its ID (string)
     @Query("SELECT * FROM movies WHERE id = :movieId")
-    suspend fun getMovieById(movieId: Long): MovieItem? {
-        Log.d("MovieRepository", "Fetching movie with id: $movieId")
-        return null
-    }
+    suspend fun getMovieById(movieId: Long): MovieItem?
 
     // Get all movies from the database
     @Query("SELECT * FROM movies")
     suspend fun getAllMovies(): List<MovieItem>
-
-    // Search movies based on title
-    @Query("SELECT * FROM movies WHERE title LIKE :searchQuery")
-    suspend fun searchMovies(searchQuery: String): List<MovieItem>
 
     // Insert a favorite movie (assuming FavoriteMovieItem is a distinct entity)
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -45,6 +37,10 @@ interface MovieDao {
     // Get all favorite movies as a Flow
     @Query("SELECT * FROM favorite_movies") // Ensure this table exists or modify to match your schema
     fun getAllFavoriteMovies(): Flow<List<MovieItem>>
+
+    // Get all favorite movies for a specific user
+    @Query("SELECT * FROM favorite_movies WHERE userName = :userName")
+    fun getFavoriteMovies(userName: String): Flow<List<FavoriteMovieItem>>
 }
 
 @Dao

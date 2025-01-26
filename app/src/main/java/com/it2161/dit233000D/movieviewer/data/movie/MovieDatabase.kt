@@ -9,7 +9,7 @@ import androidx.room.TypeConverters
 
 @Database(
     entities = [MovieItem::class, FavoriteMovieItem::class, Review::class],
-    version = 10,  // Update the version
+    version = 14,  // Update the version
     exportSchema = false
 )
 @TypeConverters(Converters::class)

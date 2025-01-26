@@ -6,28 +6,26 @@ import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import com.google.gson.Gson
-import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
 
 @Entity(tableName = "favorite_movies")
 data class FavoriteMovieItem(
     @PrimaryKey val id: Long,
-//    @SerializedName("movie_id") val movieId: Long,
     val adult: Boolean = false,
-    val backdrop_path: String,
+    val backdrop_path: String? = null,
     val budget: Int = 0,
     @TypeConverters(Converters::class)
     val genres: List<Genre> = emptyList(),
-    val homepage: String? = null,
-    val original_language: String = "",
-    val original_title: String = "",
-    val overview: String = "",
+    val homepage: String? = "Unavailable",
+    val original_language: String = "Unavailable",
+    val original_title: String = "Unavailable",
+    val overview: String = "Unavailable",
     val popularity: Double = 0.0,
-    val poster_path: String,
-    val release_date: String = "",
+    val poster_path: String? = null,
+    val release_date: String = "Unavailable",
     val revenue: Int = 0,
     val runtime: Int = 0,
-    val title: String = "",
+    val title: String = "Unavailable",
     val vote_average: Double = 0.0,
     val vote_count: Int = 0,
     val is_favorite: Boolean = false,
@@ -37,26 +35,26 @@ data class FavoriteMovieItem(
 @Entity(tableName = "movies")
 data class MovieItem(
     @PrimaryKey val id: Long,
-//    @SerializedName("movie_id") val movieId: Long,
     val adult: Boolean = false,
-    val backdrop_path: String,
+    val backdrop_path: String? = null,
     val budget: Int = 0,
     @TypeConverters(Converters::class)
     val genres: List<Genre> = emptyList(),
-    val homepage: String? = null,
-    val original_language: String = "",
-    val original_title: String = "",
-    val overview: String = "",
+    val homepage: String? = "Unavailable",
+    val original_language: String = "Unavailable",
+    val original_title: String = "Unavailable",
+    val overview: String = "Unavailable",
     val popularity: Double = 0.0,
-    val poster_path: String,
-    val release_date: String = "",
+    val poster_path: String? = null,
+    val release_date: String = "Unavailable",
     val revenue: Int = 0,
     val runtime: Int = 0,
-    val title: String = "",
+    val title: String = "Unavailable",
     val vote_average: Double = 0.0,
     val vote_count: Int = 0,
-    val is_favorite: Boolean = false,
+    val is_favorite: Boolean = false
 )
+
 
 data class Genre(
     val id: Int,
@@ -93,4 +91,29 @@ class Converters {
         val listType = object : TypeToken<List<Genre>>() {}.type
         return gson.fromJson(value, listType)
     }
+}
+
+// convert MovieItem to FavoriteMovieItem
+fun MovieItem.toFavoriteMovieItem(userName: String): FavoriteMovieItem {
+    return FavoriteMovieItem(
+        id = this.id,
+        adult = this.adult,
+        backdrop_path = this.backdrop_path,
+        budget = this.budget,
+        genres = this.genres,
+        homepage = this.homepage,
+        original_language = this.original_language,
+        original_title = this.original_title,
+        overview = this.overview,
+        popularity = this.popularity,
+        poster_path = this.poster_path,
+        release_date = this.release_date,
+        revenue = this.revenue,
+        runtime = this.runtime,
+        title = this.title,
+        vote_average = this.vote_average,
+        vote_count = this.vote_count,
+        is_favorite = this.is_favorite,
+        userName = userName
+    )
 }
