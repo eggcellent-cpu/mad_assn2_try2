@@ -4,20 +4,28 @@ import android.widget.Toast
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import android.content.Context
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.it2161.dit233000D.movieviewer.R
 import com.it2161.dit233000D.movieviewer.data.user.UserProfile
 import com.it2161.dit233000D.movieviewer.data.user.UserProfileDao
@@ -44,9 +52,9 @@ fun LoginScreen(
         modifier = Modifier.fillMaxSize()
     ) {
         Image(
-            painter = painterResource(id = R.drawable.studio_background_concept_abstract_empty_light_gradient_purple_studio_room_background_product),
+            painter = painterResource(id = R.drawable.camera),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize().graphicsLayer(alpha = 0.5f),
+            modifier = Modifier.fillMaxSize().graphicsLayer(alpha = 0.6f),
             contentScale = ContentScale.Crop
         )
 
@@ -57,10 +65,28 @@ fun LoginScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "PopCornMovie",
+                style = MaterialTheme.typography.displayLarge.copy(fontSize = 32.sp),
+                color = Color.Black,
+                textAlign = TextAlign.Center
+            )
+
             Image(
                 painter = painterResource(id = R.drawable.movie_viewer_logo),
                 contentDescription = "App Logo",
                 modifier = Modifier.size(200.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Get ready to dive into the greatest\nstories in TV and Film",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Black,
+                textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -100,8 +126,6 @@ fun LoginScreen(
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             // Password
             OutlinedTextField(
@@ -179,14 +203,36 @@ fun LoginScreen(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
             ) {
                 Text("Login")
             }
 
-            TextButton(onClick = onRegister) {
-                Text("Register")
+            TextButton(
+                onClick = {
+                    onRegister()
+                }
+            ) {
+                val annotatedText = buildAnnotatedString {
+                    // Add "Don’t have an account?" in white
+                    withStyle(style = SpanStyle(color = Color.Black)) {
+                        append("Don’t have an account? ")
+                    }
+                    // Add "Register here." with underline
+                    withStyle(style = SpanStyle(color = Color.DarkGray, textDecoration = TextDecoration.Underline)) {
+                        append("Register here.")
+                    }
+                }
+
+                Text(
+                    text = annotatedText,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        textAlign = TextAlign.Center
+                    )
+                )
             }
+
         }
     }
 }

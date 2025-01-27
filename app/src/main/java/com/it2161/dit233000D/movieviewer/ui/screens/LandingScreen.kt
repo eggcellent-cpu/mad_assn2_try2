@@ -5,20 +5,21 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
@@ -51,6 +52,9 @@ fun LandingScreen(
 
     var searchQuery by remember { mutableStateOf("") }
     val searchResults = remember { mutableStateListOf<MovieItem>() }
+
+    // State to track the selected section
+    var selectedSection by remember { mutableStateOf("All") }
 
     // Fetch movies on initial launch
     LaunchedEffect(Unit) {
@@ -113,6 +117,7 @@ fun LandingScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
+            // Search Bar
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -121,44 +126,117 @@ fun LandingScreen(
                     .fillMaxWidth()
                     .padding(8.dp)
             )
-            if (searchResults.isNotEmpty()) {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3), // 3 columns
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(8.dp), // optional padding around the grid
-                    verticalArrangement = Arrangement.spacedBy(8.dp), // optional space between rows
-                    horizontalArrangement = Arrangement.spacedBy(8.dp) // optional space between columns
-                ) {
-                    items(searchResults) { movie ->
-                        MovieCard(movie = movie) {
-                            navController.navigate("movieDetail/${movie.id}")
+
+            // Section Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp), // Adjusted padding
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // All Section
+                SectionItem(
+                    text = "All",
+                    isSelected = selectedSection == "All",
+                    onClick = { selectedSection = "All" }
+                )
+                // Popular Section
+                SectionItem(
+                    text = "Popular",
+                    isSelected = selectedSection == "Popular",
+                    onClick = { selectedSection = "Popular" }
+                )
+                // Top Rated Section
+                SectionItem(
+                    text = "Top Rated",
+                    isSelected = selectedSection == "Top Rated",
+                    onClick = { selectedSection = "Top Rated" }
+                )
+                // Now Playing Section
+                SectionItem(
+                    text = "Now Playing",
+                    isSelected = selectedSection == "Now Playing",
+                    onClick = { selectedSection = "Now Playing" }
+                )
+                // Upcoming Section
+                SectionItem(
+                    text = "Upcoming",
+                    isSelected = selectedSection == "Upcoming",
+                    onClick = { selectedSection = "Upcoming" }
+                )
+            }
+
+            // Display Movies Based on Selected Section
+            when (selectedSection) {
+                "All" -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                    ) {
+                        item {
+                            SectionHeader(title = "Popular")
+                            MovieCarousel(movies = popularMovies, navController = navController)
+                        }
+                        item {
+                            SectionHeader(title = "Top Rated")
+                            MovieCarousel(movies = topRatedMovies, navController = navController)
+                        }
+                        item {
+                            SectionHeader(title = "Now Playing")
+                            MovieCarousel(movies = nowPlayingMovies, navController = navController)
+                        }
+                        item {
+                            SectionHeader(title = "Upcoming")
+                            MovieCarousel(movies = upcomingMovies, navController = navController)
                         }
                     }
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                ) {
-                    item {
-                        SectionHeader(title = "Popular")
-                        MovieCarousel(movies = popularMovies, navController = navController)
-                    }
 
-                    item {
-                        SectionHeader(title = "Top Rated")
-                        MovieCarousel(movies = topRatedMovies, navController = navController)
+                "Popular" -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                    ) {
+                        item {
+                            SectionHeader(title = "Popular")
+                            MovieCarousel(movies = popularMovies, navController = navController)
+                        }
                     }
+                }
 
-                    item {
-                        SectionHeader(title = "Now Playing")
-                        MovieCarousel(movies = nowPlayingMovies, navController = navController)
+                "Top Rated" -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                    ) {
+                        item {
+                            SectionHeader(title = "Top Rated")
+                            MovieCarousel(movies = topRatedMovies, navController = navController)
+                        }
                     }
+                }
 
-                    item {
-                        SectionHeader(title = "Upcoming")
-                        MovieCarousel(movies = upcomingMovies, navController = navController)
+                "Now Playing" -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                    ) {
+                        item {
+                            SectionHeader(title = "Now Playing")
+                            MovieCarousel(movies = nowPlayingMovies, navController = navController)
+                        }
+                    }
+                }
+
+                "Upcoming" -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                    ) {
+                        item {
+                            SectionHeader(title = "Upcoming")
+                            MovieCarousel(movies = upcomingMovies, navController = navController)
+                        }
                     }
                 }
             }
@@ -252,6 +330,39 @@ fun fetchMovies(
     }
 }
 
+@Composable
+fun SectionItem(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    var isHovered by remember { mutableStateOf(false) }
+
+    Text(
+        text = text,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .pointerInput(Unit) {
+                // Detect hover state
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        when (event.type) {
+                            PointerEventType.Enter -> isHovered = true
+                            PointerEventType.Exit -> isHovered = false
+                            else -> Unit
+                        }
+                    }
+                }
+            }
+            .padding(8.dp),
+        style = MaterialTheme.typography.bodyMedium.copy(
+            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray,
+            textDecoration = if (isSelected || isHovered) TextDecoration.Underline else TextDecoration.None
+        )
+    )
+}
+
 
 @Composable
 fun SectionHeader(title: String) {
@@ -260,7 +371,7 @@ fun SectionHeader(title: String) {
         style = MaterialTheme.typography.titleLarge,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(12.dp)
     )
 }
 
@@ -284,7 +395,7 @@ fun MovieCarousel(movies: List<MovieItem>, navController: NavController) {
 fun MovieCard(movie: MovieItem, onClick: () -> Unit) {
     Column(
         modifier = Modifier
-            .width(120.dp)
+            .width(150.dp)
             .clickable(onClick = onClick)
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -293,7 +404,7 @@ fun MovieCard(movie: MovieItem, onClick: () -> Unit) {
             painter = rememberAsyncImagePainter("https://image.tmdb.org/t/p/w500${movie.poster_path}"),
             contentDescription = movie.title,
             modifier = Modifier
-                .height(180.dp)
+                .height(200.dp)
                 .fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(8.dp))

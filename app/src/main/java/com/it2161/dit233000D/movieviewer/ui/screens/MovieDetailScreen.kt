@@ -213,8 +213,7 @@ fun MovieDetailScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .padding(8.dp),
+                    .padding(horizontal = 8.dp),
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.Start
             ) {
