@@ -15,21 +15,24 @@ data class FavoriteMovieItem(
     val backdrop_path: String? = null,
     val budget: Int = 0,
     @TypeConverters(Converters::class)
-    val genres: List<Genre> = emptyList(),
+    val genres: List<Genre>? = emptyList(),
     val homepage: String? = "Unavailable",
-    val original_language: String = "Unavailable",
-    val original_title: String = "Unavailable",
-    val overview: String = "Unavailable",
+    val original_language: String,
+    val original_title: String,
+    val overview: String? = "Unavailable",
     val popularity: Double = 0.0,
     val poster_path: String? = null,
     val release_date: String = "Unavailable",
     val revenue: Int = 0,
     val runtime: Int = 0,
-    val title: String = "Unavailable",
+    val title: String,
     val vote_average: Double = 0.0,
     val vote_count: Int = 0,
     val is_favorite: Boolean = false,
-    val userName: String
+
+    // specific user
+    val userName: String,
+    val userId: Int
 )
 
 @Entity(tableName = "movies")
@@ -37,19 +40,19 @@ data class MovieItem(
     @PrimaryKey val id: Long,
     val adult: Boolean = false,
     val backdrop_path: String? = null,
-    val budget: Int = 0,
+    val budget: Int? = 0,
     @TypeConverters(Converters::class)
-    val genres: List<Genre> = emptyList(),
+    val genres: List<Genre>? = emptyList(),
     val homepage: String? = "Unavailable",
-    val original_language: String = "Unavailable",
-    val original_title: String = "Unavailable",
-    val overview: String = "Unavailable",
+    val original_language: String,
+    val original_title: String,
+    val overview: String? = "Unavailable",
     val popularity: Double = 0.0,
     val poster_path: String? = null,
     val release_date: String = "Unavailable",
     val revenue: Int = 0,
     val runtime: Int = 0,
-    val title: String = "Unavailable",
+    val title: String,
     val vote_average: Double = 0.0,
     val vote_count: Int = 0,
     val is_favorite: Boolean = false
@@ -94,12 +97,12 @@ class Converters {
 }
 
 // convert MovieItem to FavoriteMovieItem
-fun MovieItem.toFavoriteMovieItem(userName: String): FavoriteMovieItem {
+fun MovieItem.toFavoriteMovieItem(userName: String, userId: Int): FavoriteMovieItem {
     return FavoriteMovieItem(
         id = this.id,
         adult = this.adult,
         backdrop_path = this.backdrop_path,
-        budget = this.budget,
+        budget = this.budget ?: 0,
         genres = this.genres,
         homepage = this.homepage,
         original_language = this.original_language,
@@ -114,6 +117,7 @@ fun MovieItem.toFavoriteMovieItem(userName: String): FavoriteMovieItem {
         vote_average = this.vote_average,
         vote_count = this.vote_count,
         is_favorite = this.is_favorite,
-        userName = userName
+        userName = userName,
+        userId = userId
     )
 }

@@ -14,9 +14,9 @@ class FavoriteMovieViewModel(private val repository: MovieRepository) : ViewMode
     val favoriteMovies: StateFlow<List<FavoriteMovieItem>> get() = _favoriteMovies
 
     // Load favorite movies for a specific user
-    fun loadFavoriteMovies(userName: String) {
+    fun loadFavoriteMovies(userId: Int) {
         viewModelScope.launch {
-            repository.getFavoriteMovies(userName).collect { movies ->
+            repository.getFavoriteMovies(userId).collect { movies ->
                 _favoriteMovies.value = movies
             }
         }
@@ -46,9 +46,9 @@ class FavoriteMovieViewModel(private val repository: MovieRepository) : ViewMode
         }
     }
 
-    fun loadMoviesWithFavorites(userName: String, allMovies: List<FavoriteMovieItem>) {
+    fun loadMoviesWithFavorites(userId: Int, allMovies: List<FavoriteMovieItem>) {
         viewModelScope.launch {
-            repository.getFavoriteMovies(userName).collect { favorites ->
+            repository.getFavoriteMovies(userId).collect { favorites ->
                 val updatedMovies = allMovies.map { movie ->
                     movie.copy(is_favorite = favorites.any { it.id == movie.id })
                 }

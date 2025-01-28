@@ -124,7 +124,7 @@ fun LandingScreen(
                 label = { Text("Search for movies") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp)
+                    .padding(16.dp)
             )
 
             // Section Row

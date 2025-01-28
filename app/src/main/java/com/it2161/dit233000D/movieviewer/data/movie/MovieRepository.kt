@@ -52,8 +52,8 @@ class MovieRepository private constructor(context: Context) {
 
 
     // Get the list of favorite movies from local storage as a Flow
-    fun getFavoriteMovies(userName: String): Flow<List<FavoriteMovieItem>> {
-        return movieDao.getFavoriteMovies(userName)
+    fun getFavoriteMovies(userId: Int): Flow<List<FavoriteMovieItem>> {
+        return movieDao.getFavoriteMovies(userId)
     }
 
     // Add a movie to favorites

@@ -39,8 +39,8 @@ interface MovieDao {
     fun getAllFavoriteMovies(): Flow<List<MovieItem>>
 
     // Get all favorite movies for a specific user
-    @Query("SELECT * FROM favorite_movies WHERE userName = :userName")
-    fun getFavoriteMovies(userName: String): Flow<List<FavoriteMovieItem>>
+    @Query("SELECT * FROM favorite_movies WHERE userId = :userId")
+    fun getFavoriteMovies(userId: Int): Flow<List<FavoriteMovieItem>>
 }
 
 @Dao

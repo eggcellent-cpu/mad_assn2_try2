@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -38,8 +39,8 @@ fun FavoriteMovieScreen(
     val currentUser = userProfile ?: UserProfile(0, "")
 
     // Load favorite movies
-    LaunchedEffect(currentUser.userName) {
-        viewModel.loadFavoriteMovies(currentUser.userName)
+    LaunchedEffect(currentUser.id) {
+        viewModel.loadFavoriteMovies(currentUser.id)
     }
 
     // Observe the favorite movies
@@ -110,8 +111,21 @@ fun FavoriteMovieItem(movie: FavoriteMovieItem, onClick: () -> Unit, onToggleFav
         Column(Modifier.weight(1f)) {
             Text(text = movie.title, style = MaterialTheme.typography.bodyLarge)
             Text(text = "Release Date: ${movie.release_date}", style = MaterialTheme.typography.bodyMedium)
-            Text(text = "Rating: ${movie.vote_average}", style = MaterialTheme.typography.bodySmall)
-        }
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Rating: ${movie.vote_average}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.width(4.dp)) // Add some spacing between text and icon
+                Icon(
+                    painter = painterResource(id = R.drawable.star),
+                    contentDescription = "Star Icon",
+                    modifier = Modifier.size(16.dp),
+                    tint = Color(0xFFFFD700)
+                )
+            }        }
         IconToggleButton(
             checked = movie.is_favorite,
             onCheckedChange = { isChecked -> onToggleFavorite(isChecked) }
