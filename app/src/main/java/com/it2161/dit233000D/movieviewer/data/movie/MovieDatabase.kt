@@ -9,7 +9,7 @@ import androidx.room.TypeConverters
 
 @Database(
     entities = [MovieItem::class, FavoriteMovieItem::class, Review::class],
-    version = 17,  // Update the version
+    version = 20,  // Update the version
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -22,7 +22,6 @@ abstract class MovieDatabase : RoomDatabase() {
         private var INSTANCE: MovieDatabase? = null
 
         fun getDatabase(context: Context): MovieDatabase {
-            Log.d("MovieViewerApp", "Initializing database...")
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,

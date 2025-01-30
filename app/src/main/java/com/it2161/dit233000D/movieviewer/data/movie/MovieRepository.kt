@@ -6,6 +6,7 @@ import com.it2161.dit233000D.movieviewer.api.RetrofitInstance
 import com.it2161.dit233000D.movieviewer.utils.isNetworkAvailable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.IOException
 
@@ -53,7 +54,10 @@ class MovieRepository private constructor(context: Context) {
 
     // Get the list of favorite movies from local storage as a Flow
     fun getFavoriteMovies(userId: Int): Flow<List<FavoriteMovieItem>> {
-        return movieDao.getFavoriteMovies(userId)
+        return movieDao.getFavoriteMovies(userId).map { favorites ->
+            Log.d("MovieViewerApp", "Fetched favorites for user $userId: ${favorites.size}")
+            favorites
+        }
     }
 
     // Add a movie to favorites
@@ -63,13 +67,11 @@ class MovieRepository private constructor(context: Context) {
 
     // Remove a movie from favorites
     suspend fun removeFavoriteMovie(movie: FavoriteMovieItem) {
-        movieDao.deleteFavoriteMovie(movie) // Ensure this method is correct and corresponds to your table
+        movieDao.deleteFavoriteMovie(movie.favoriteId, movie.userId)
     }
 
-    // Get a movie by its ID
-    suspend fun getMovieById(movieId: Long): MovieItem? {
-        Log.d("MovieRepository", "Fetching movie with id: $movieId")
-        return movieDao.getMovieById(movieId)
+    fun getFavoriteMoviesWithDetails(userId: Int): Flow<List<MovieItem>> {
+        return movieDao.getFavoriteMoviesWithDetails(userId)
     }
 
     companion object {

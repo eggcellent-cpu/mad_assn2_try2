@@ -124,118 +124,153 @@ fun LandingScreen(
                 label = { Text("Search for movies") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(16.dp),
+                trailingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.search),
+                        contentDescription = "Search Icon",
+                        modifier = Modifier.clickable {
+                            if (searchQuery.isNotBlank()) {
+                                searchMovies(searchQuery, searchResults, context, scope)
+                            }
+                        }
+                    )
+                }
             )
 
-            // Section Row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp), // Adjusted padding
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                // All Section
-                SectionItem(
-                    text = "All",
-                    isSelected = selectedSection == "All",
-                    onClick = { selectedSection = "All" }
+            if (searchQuery.isNotBlank() && searchResults.isNotEmpty()) {
+                // Search Results Section
+                Text(
+                    text = "Search Result: '$searchQuery'",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(start = 16.dp, top = 8.dp)
                 )
-                // Popular Section
-                SectionItem(
-                    text = "Popular",
-                    isSelected = selectedSection == "Popular",
-                    onClick = { selectedSection = "Popular" }
-                )
-                // Top Rated Section
-                SectionItem(
-                    text = "Top Rated",
-                    isSelected = selectedSection == "Top Rated",
-                    onClick = { selectedSection = "Top Rated" }
-                )
-                // Now Playing Section
-                SectionItem(
-                    text = "Now Playing",
-                    isSelected = selectedSection == "Now Playing",
-                    onClick = { selectedSection = "Now Playing" }
-                )
-                // Upcoming Section
-                SectionItem(
-                    text = "Upcoming",
-                    isSelected = selectedSection == "Upcoming",
-                    onClick = { selectedSection = "Upcoming" }
-                )
-            }
 
-            // Display Movies Based on Selected Section
-            when (selectedSection) {
-                "All" -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                    ) {
-                        item {
-                            SectionHeader(title = "Popular")
-                            MovieCarousel(movies = popularMovies, navController = navController)
-                        }
-                        item {
-                            SectionHeader(title = "Top Rated")
-                            MovieCarousel(movies = topRatedMovies, navController = navController)
-                        }
-                        item {
-                            SectionHeader(title = "Now Playing")
-                            MovieCarousel(movies = nowPlayingMovies, navController = navController)
-                        }
-                        item {
-                            SectionHeader(title = "Upcoming")
-                            MovieCarousel(movies = upcomingMovies, navController = navController)
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    items(searchResults.chunked(3)) { rowMovies ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            rowMovies.forEach { movie ->
+                                MovieCard(
+                                    movie = movie,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        navController.navigate("movieDetail/${movie.id}")
+                                    }
+                                )
+                            }
+                            // Add empty spaces if the row is not complete
+                            repeat(3 - rowMovies.size) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }
-
-                "Popular" -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                    ) {
-                        item {
-                            SectionHeader(title = "Popular")
-                            MovieCarousel(movies = popularMovies, navController = navController)
-                        }
-                    }
+            } else if (searchQuery.isBlank()) {
+                // Section Navigation
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    SectionItem(
+                        text = "All",
+                        isSelected = selectedSection == "All",
+                        onClick = { selectedSection = "All" }
+                    )
+                    SectionItem(
+                        text = "Popular",
+                        isSelected = selectedSection == "Popular",
+                        onClick = { selectedSection = "Popular" }
+                    )
+                    SectionItem(
+                        text = "Top Rated",
+                        isSelected = selectedSection == "Top Rated",
+                        onClick = { selectedSection = "Top Rated" }
+                    )
+                    SectionItem(
+                        text = "Now Playing",
+                        isSelected = selectedSection == "Now Playing",
+                        onClick = { selectedSection = "Now Playing" }
+                    )
+                    SectionItem(
+                        text = "Upcoming",
+                        isSelected = selectedSection == "Upcoming",
+                        onClick = { selectedSection = "Upcoming" }
+                    )
                 }
 
-                "Top Rated" -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                    ) {
-                        item {
-                            SectionHeader(title = "Top Rated")
-                            MovieCarousel(movies = topRatedMovies, navController = navController)
+                // Movie Sections Content
+                when (selectedSection) {
+                    "All" -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            item {
+                                SectionHeader(title = "Popular")
+                                MovieCarousel(movies = popularMovies, navController = navController)
+                            }
+                            item {
+                                SectionHeader(title = "Top Rated")
+                                MovieCarousel(movies = topRatedMovies, navController = navController)
+                            }
+                            item {
+                                SectionHeader(title = "Now Playing")
+                                MovieCarousel(movies = nowPlayingMovies, navController = navController)
+                            }
+                            item {
+                                SectionHeader(title = "Upcoming")
+                                MovieCarousel(movies = upcomingMovies, navController = navController)
+                            }
                         }
                     }
-                }
-
-                "Now Playing" -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                    ) {
-                        item {
-                            SectionHeader(title = "Now Playing")
-                            MovieCarousel(movies = nowPlayingMovies, navController = navController)
+                    "Popular" -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            item {
+                                SectionHeader(title = "Popular")
+                                MovieCarousel(movies = popularMovies, navController = navController)
+                            }
                         }
                     }
-                }
-
-                "Upcoming" -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                    ) {
-                        item {
-                            SectionHeader(title = "Upcoming")
-                            MovieCarousel(movies = upcomingMovies, navController = navController)
+                    "Top Rated" -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            item {
+                                SectionHeader(title = "Top Rated")
+                                MovieCarousel(movies = topRatedMovies, navController = navController)
+                            }
+                        }
+                    }
+                    "Now Playing" -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            item {
+                                SectionHeader(title = "Now Playing")
+                                MovieCarousel(movies = nowPlayingMovies, navController = navController)
+                            }
+                        }
+                    }
+                    "Upcoming" -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            item {
+                                SectionHeader(title = "Upcoming")
+                                MovieCarousel(movies = upcomingMovies, navController = navController)
+                            }
                         }
                     }
                 }
@@ -392,9 +427,13 @@ fun MovieCarousel(movies: List<MovieItem>, navController: NavController) {
 }
 
 @Composable
-fun MovieCard(movie: MovieItem, onClick: () -> Unit) {
+fun MovieCard(
+    movie: MovieItem,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .width(150.dp)
             .clickable(onClick = onClick)
             .padding(8.dp),

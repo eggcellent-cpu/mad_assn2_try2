@@ -1,6 +1,7 @@
 package com.it2161.dit233000D.movieviewer.ui.screens
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,34 +17,33 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.it2161.dit233000D.movieviewer.R
-import com.it2161.dit233000D.movieviewer.data.movie.FavoriteMovieItem
+import com.it2161.dit233000D.movieviewer.data.movie.MovieItem
 import com.it2161.dit233000D.movieviewer.data.movie.MovieRepository
+import com.it2161.dit233000D.movieviewer.data.movie.toFavoriteMovieItem
 import com.it2161.dit233000D.movieviewer.data.user.UserProfile
 import com.it2161.dit233000D.movieviewer.viewmodel.FavoriteMovieViewModel
 import com.it2161.dit233000D.movieviewer.viewmodel.FavoriteMovieViewModelFactory
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoriteMovieScreen(
     navController: NavController,
     context: Context,
-    userProfile: UserProfile?, // Change parameter type
-    onMovieClick: (Long) -> Unit
+    userProfile: UserProfile?,
+    onMovieClick: (Long) -> Unit,
 ) {
     val repository = remember { MovieRepository.getInstance(context) }
     val viewModel: FavoriteMovieViewModel = viewModel(
-        factory = FavoriteMovieViewModelFactory(repository)
+        factory = FavoriteMovieViewModelFactory(repository, userProfile)
     )
 
-    // Use the passed user profile or fallback to a default
     val currentUser = userProfile ?: UserProfile(0, "")
 
-    // Load favorite movies
     LaunchedEffect(currentUser.id) {
-        viewModel.loadFavoriteMovies(currentUser.id)
+        viewModel.loadFavoriteMovies(currentUser.id) // Load favorite movies on screen load
     }
 
-    // Observe the favorite movies
     val favoriteMovies = viewModel.favoriteMovies.collectAsState()
 
     Scaffold(
@@ -67,12 +67,14 @@ fun FavoriteMovieScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
-                    items(favoriteMovies.value) { movie ->
+                    items(favoriteMovies.value) { favMovie ->
                         FavoriteMovieItem(
-                            movie = movie,
-                            onClick = { navController.navigate("movieDetail/${movie.id}") },
-                            onToggleFavorite = { isFavorite ->
-                                viewModel.toggleFavorite(movie, isFavorite)
+                            movie = favMovie,
+                            onClick = { onMovieClick(favMovie.id) },
+                            onDelete = {
+                                // Convert MovieItem to FavoriteMovieItem before passing it to onDelete
+                                val favoriteMovie = favMovie.toFavoriteMovieItem(currentUser.userName, currentUser.id)
+                                viewModel.removeFavoriteMovie(favoriteMovie)
                             }
                         )
                     }
@@ -95,7 +97,11 @@ fun FavoriteMovieScreen(
 }
 
 @Composable
-fun FavoriteMovieItem(movie: FavoriteMovieItem, onClick: () -> Unit, onToggleFavorite: (Boolean) -> Unit) {
+fun FavoriteMovieItem(
+    movie: MovieItem,
+    onClick: () -> Unit,
+    onDelete: (MovieItem) -> Unit // Callback to handle deletion
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -118,23 +124,20 @@ fun FavoriteMovieItem(movie: FavoriteMovieItem, onClick: () -> Unit, onToggleFav
                     text = "Rating: ${movie.vote_average}",
                     style = MaterialTheme.typography.bodyMedium
                 )
-                Spacer(modifier = Modifier.width(4.dp)) // Add some spacing between text and icon
+                Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     painter = painterResource(id = R.drawable.star),
                     contentDescription = "Star Icon",
                     modifier = Modifier.size(16.dp),
                     tint = Color(0xFFFFD700)
                 )
-            }        }
-        IconToggleButton(
-            checked = movie.is_favorite,
-            onCheckedChange = { isChecked -> onToggleFavorite(isChecked) }
-        ) {
+            }
+        }
+        IconButton(onClick = { onDelete(movie) }) {  // Call onDelete to remove the movie
             Icon(
-                painter = painterResource(
-                    id = if (movie.is_favorite) R.drawable.heart_check else R.drawable.favorite
-                ),
-                contentDescription = if (movie.is_favorite) "Remove from favorites" else "Add to favorites"
+                painter = painterResource(id = R.drawable.delete),
+                contentDescription = "Delete",
+                tint = Color.Red
             )
         }
     }

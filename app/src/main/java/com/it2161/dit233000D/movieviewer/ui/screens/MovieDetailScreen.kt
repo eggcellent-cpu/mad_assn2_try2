@@ -56,13 +56,15 @@ fun MovieDetailScreen(
     var similarMovies by remember { mutableStateOf<List<MovieItem>>(emptyList()) }
 
     val currentUser = userProfile ?: UserProfile(0, "")
-    val isFavorite = remember { mutableStateOf(movieDetail.value?.is_favorite ?: false) }
+
+    val isFavorite = remember(currentUser.id) {
+        Log.d("MovieViewerApp", "Initializing favorite state for user: ${currentUser.userName}")
+        mutableStateOf(false)
+    }
 
     val viewModel: FavoriteMovieViewModel = viewModel(
-        factory = FavoriteMovieViewModelFactory(repository)
+        factory = FavoriteMovieViewModelFactory(repository, userProfile)
     )
-
-    Log.d("MovieViewerApp", "Reviews fetched: ${reviews.size}")
 
     // Function to clean HTML tags from review content
     fun cleanHtmlContent(content: String): String {
@@ -89,83 +91,76 @@ fun MovieDetailScreen(
         }
     }
 
-    LaunchedEffect(movieId, currentUser.userName, currentUser.id) {
-        scope.launch {
-            // Validate and convert movie ID
-            val movieIdLong = safeConvertToLong(movieId)
-            if (movieIdLong == null) {
-                errorMessage = "Invalid movie ID format. Unable to load details."
-                return@launch
+    LaunchedEffect(movieId, currentUser.id) {
+        val movieIdLong = safeConvertToLong(movieId)
+        if (movieIdLong == null) {
+            errorMessage = "Invalid movie ID format. Unable to load details."
+            return@LaunchedEffect
+        }
+
+        // Fetch favorite status from the database
+        val isMovieFavorited = viewModel.isMovieFavorited(movieIdLong, currentUser.id)
+        Log.d("MovieViewerApp", "Initial favorite status for movie $movieIdLong: $isMovieFavorited")
+        isFavorite.value = isMovieFavorited
+
+        val apiKey = try {
+            context.packageManager.getApplicationInfo(
+                context.packageName,
+                PackageManager.GET_META_DATA
+            ).metaData.getString("com.movieviewer.API_KEY.233000D") ?: run {
+                errorMessage = "API key not found."
+                return@LaunchedEffect
             }
+        } catch (e: Exception) {
+            errorMessage = "Failed to retrieve API key: ${e.message}"
+            return@LaunchedEffect
+        }
 
-            val favoriteMovies = repository.getFavoriteMovies(currentUser.id).firstOrNull() ?: emptyList()
-            isFavorite.value = favoriteMovies.any { it.id == movieIdLong }
+        val isOnline = isNetworkAvailable(context)
+        Log.d("MovieViewerApp", "Movie ID: $movieIdLong")
+        Log.d("MovieViewerApp", "Is Online: $isOnline")
 
-            val apiKey = try {
-                context.packageManager.getApplicationInfo(
-                    context.packageName,
-                    PackageManager.GET_META_DATA
-                ).metaData.getString("com.movieviewer.API_KEY.233000D") ?: run {
-                    errorMessage = "API key not found."
-                    return@launch
+        if (isOnline) {
+            try {
+                val movieDetailResponse =
+                    RetrofitInstance.getApiService().getMovieDetails(movieIdLong, apiKey)
+                val reviewsResponse =
+                    RetrofitInstance.getApiService().getMovieReviews(movieIdLong, apiKey)
+
+                // Update Room database
+                movieDatabase.movieDao().insert(movieDetailResponse)
+                movieDatabase.reviewDao().insertReviews(reviewsResponse.results)
+
+                movieDetail.value = movieDetailResponse
+                reviews.addAll(reviewsResponse.results)
+
+                // Fetch Similar Movies
+                val similarMoviesResponse = RetrofitInstance.getApiService().getSimilarMovies(
+                    movieId = movieIdLong.toInt(),
+                    apiKey = apiKey
+                )
+                similarMovies = similarMoviesResponse.results.map { movie ->
+                    movie.copy(
+                        title = movie.title,
+                        poster_path = movie.poster_path ?: "unavailable",
+                    )
                 }
             } catch (e: Exception) {
-                errorMessage = "Failed to retrieve API key: ${e.message}"
-                return@launch
+                Log.e("MovieViewerApp", "Error loading movie details: ${e.localizedMessage}")
+                errorMessage = "Error loading movie details."
             }
+        } else {
+            // Load from Room database
+            val offlineMovieDetail = movieDatabase.movieDao().getMovieById(movieIdLong)
+            val offlineReviews = movieDatabase.reviewDao().getReviewsForMovie(movieIdLong)
 
-            val isOnline = isNetworkAvailable(context)
-            Log.d("MovieViewerApp", "Movie ID: $movieIdLong")
-            Log.d("MovieViewerApp", "Is Online: $isOnline")
-
-            if (isOnline) {
-                try {
-                    val movieDetailResponse =
-                        RetrofitInstance.getApiService().getMovieDetails(movieIdLong, apiKey)
-                    val reviewsResponse =
-                        RetrofitInstance.getApiService().getMovieReviews(movieIdLong, apiKey)
-
-                    // Update Room database
-                    movieDatabase.movieDao().insert(movieDetailResponse)
-                    movieDatabase.reviewDao().insertReviews(reviewsResponse.results)
-
-                    movieDetail.value = movieDetailResponse
-                    reviews.addAll(reviewsResponse.results)
-
-                } catch (e: Exception) {
-                    Log.e("MovieViewerApp", "Error loading movie details: ${e.localizedMessage}")
-                    errorMessage = "Error loading movie details."
-                }
+            if (offlineMovieDetail != null) {
+                movieDetail.value = offlineMovieDetail
+                reviews.addAll(offlineReviews)
             } else {
-                // Load from Room database
-                val offlineMovieDetail = movieDatabase.movieDao().getMovieById(movieIdLong)
-                val offlineReviews = movieDatabase.reviewDao().getReviewsForMovie(movieIdLong)
-
-                if (offlineMovieDetail != null) {
-                    movieDetail.value = offlineMovieDetail
-                    reviews.addAll(offlineReviews)
-                } else {
-                    errorMessage = "Movie details not available offline."
-                }
-                offlineMessage = "This feature is unavailable offline."
+                errorMessage = "Movie details not available offline."
             }
-
-            // Fetch Similar Movies
-            if (isOnline && movieIdLong != null) {
-                try {
-                    val similarMoviesResponse = RetrofitInstance.getApiService().getSimilarMovies(
-                        movieId = movieIdLong.toInt(),
-                        apiKey = apiKey
-                    )
-                    similarMovies = similarMoviesResponse.results.map { movie ->
-                        movie.copy(
-                            title = movie.title,
-                            poster_path = movie.poster_path ?: "unavailable",
-                        )
-                    }                } catch (e: Exception) {
-                    Log.e("MovieViewerApp", "Error loading similar movies: ${e.localizedMessage}")
-                }
-            }
+            offlineMessage = "This feature is unavailable offline."
         }
     }
     offlineMessage?.let {
@@ -174,6 +169,26 @@ fun MovieDetailScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error
         )
+    }
+
+    // Function to toggle favorite status
+    fun toggleFavorite(movie: MovieItem) {
+        scope.launch {
+            val favoriteMovie = movie.toFavoriteMovieItem(currentUser.userName, currentUser.id)
+
+            if (isFavorite.value) {
+                // Remove from favorites
+                viewModel.removeFavoriteMovie(favoriteMovie)
+                Log.d("MovieViewerApp", "Removed favorite - Movie: ${movie.title}, User: ${currentUser.userName}")
+            } else {
+                // Add to favorites
+                viewModel.addFavoriteMovie(favoriteMovie)
+                Log.d("MovieViewerApp", "Added favorite - Movie: ${movie.title}, User: ${currentUser.userName}")
+            }
+
+            isFavorite.value = !isFavorite.value
+            Log.d("MovieViewerApp", "Updated favorite status - Movie: ${movie.title}, IsFavorite: ${isFavorite.value}")
+        }
     }
 
     Scaffold(
@@ -190,17 +205,8 @@ fun MovieDetailScreen(
                 },
                 actions = {
                     IconButton(onClick = {
-                        scope.launch {
-                            movieDetail.value?.let { movie ->
-                                val favoriteMovie = movie.toFavoriteMovieItem(currentUser.userName, currentUser.id)
-
-                                if (isFavorite.value) {
-                                    viewModel.removeFavoriteMovie(favoriteMovie) // Only pass the movie
-                                } else {
-                                    viewModel.addFavoriteMovie(favoriteMovie) // Only pass the movie
-                                }
-                                isFavorite.value = !isFavorite.value
-                            }
+                        movieDetail.value?.let { movie ->
+                            toggleFavorite(movie)
                         }
                     }) {
                         Icon(

@@ -10,25 +10,8 @@ import com.google.gson.reflect.TypeToken
 
 @Entity(tableName = "favorite_movies")
 data class FavoriteMovieItem(
-    @PrimaryKey val id: Long,
-    val adult: Boolean = false,
-    val backdrop_path: String? = null,
-    val budget: Int = 0,
-    @TypeConverters(Converters::class)
-    val genres: List<Genre>? = emptyList(),
-    val homepage: String? = "Unavailable",
-    val original_language: String,
-    val original_title: String,
-    val overview: String? = "Unavailable",
-    val popularity: Double = 0.0,
-    val poster_path: String? = null,
-    val release_date: String = "Unavailable",
-    val revenue: Int = 0,
-    val runtime: Int = 0,
-    val title: String,
-    val vote_average: Double = 0.0,
-    val vote_count: Int = 0,
-    val is_favorite: Boolean = false,
+    @PrimaryKey(autoGenerate = true) val favoriteId: Long = 0,
+    val movieId: Long,
 
     // specific user
     val userName: String,
@@ -99,25 +82,9 @@ class Converters {
 // convert MovieItem to FavoriteMovieItem
 fun MovieItem.toFavoriteMovieItem(userName: String, userId: Int): FavoriteMovieItem {
     return FavoriteMovieItem(
-        id = this.id,
-        adult = this.adult,
-        backdrop_path = this.backdrop_path,
-        budget = this.budget ?: 0,
-        genres = this.genres,
-        homepage = this.homepage,
-        original_language = this.original_language,
-        original_title = this.original_title,
-        overview = this.overview,
-        popularity = this.popularity,
-        poster_path = this.poster_path,
-        release_date = this.release_date,
-        revenue = this.revenue,
-        runtime = this.runtime,
-        title = this.title,
-        vote_average = this.vote_average,
-        vote_count = this.vote_count,
-        is_favorite = this.is_favorite,
+        favoriteId = this.id,
+        movieId = this.id,
+        userId = userId,
         userName = userName,
-        userId = userId
     )
 }
