@@ -1,6 +1,5 @@
 package com.it2161.dit233000D.movieviewer.ui.screens
 
-import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -8,7 +7,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.it2161.dit233000D.movieviewer.R
@@ -23,10 +21,9 @@ fun ProfileScreen(
     navController: NavController,
     userProfileDao: UserProfileDao
 ) {
-    val context = LocalContext.current
     var savedProfile by remember { mutableStateOf<UserProfile?>(null) }
 
-    // Fetch profile asynchronously
+    // fetch profile asynchronously
     LaunchedEffect(userProfile.id) {
         Log.d("ProfileScreen", "User ID: ${userProfile.id}")
         savedProfile = userProfileDao.getProfile(userProfile.id)
@@ -64,7 +61,7 @@ fun ProfileScreen(
                     .padding(innerPadding),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Display Avatar
+                // Avatar
                 Image(
                     painter = painterResource(id = savedProfile!!.avatar),
                     contentDescription = "User Avatar",
@@ -73,7 +70,7 @@ fun ProfileScreen(
                         .padding(bottom = 25.dp)
                 )
 
-                // Display User Profile Details
+                // User Profile Details
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally

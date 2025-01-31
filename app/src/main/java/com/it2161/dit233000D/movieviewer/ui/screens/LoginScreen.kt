@@ -4,7 +4,6 @@ import android.widget.Toast
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,7 +15,6 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -38,7 +36,7 @@ fun LoginScreen(
     userProfileDao: UserProfileDao
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()  // To launch coroutines
+    val scope = rememberCoroutineScope()  // launch coroutines
 
     var userId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -69,7 +67,7 @@ fun LoginScreen(
 
             Text(
                 text = "PopCornMovie",
-                style = MaterialTheme.typography.displayLarge.copy(fontSize = 32.sp),
+                style = MaterialTheme.typography.displayLarge.copy(fontSize = 35.sp),
                 color = Color.Black,
                 textAlign = TextAlign.Center
             )
@@ -84,7 +82,7 @@ fun LoginScreen(
 
             Text(
                 text = "Get ready to dive into the greatest\nstories in TV and Film",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 18.sp),
                 color = Color.Black,
                 textAlign = TextAlign.Center
             )
@@ -99,7 +97,28 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Preferred Name (added here)
+            // Displaying Username error message
+            if (!errorMessageUsername.isNullOrEmpty()) {
+                Row(
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = ImageVector.vectorResource(id = R.drawable.error_icon),
+                        contentDescription = "Error",
+                        tint = Color.Red
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = errorMessageUsername ?: "",
+                        color = Color.Red,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+
+            // Preferred Name
             OutlinedTextField(
                 value = preferredName,
                 onValueChange = { preferredName = it },
@@ -116,12 +135,12 @@ fun LoginScreen(
                     Icon(
                         imageVector = ImageVector.vectorResource(id = R.drawable.error_icon),
                         contentDescription = "Error",
-                        tint = androidx.compose.ui.graphics.Color.Red
+                        tint = Color.Red
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = errorMessagePreferredName ?: "",
-                        color = androidx.compose.ui.graphics.Color.Red,
+                        color = Color.Red,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -153,12 +172,12 @@ fun LoginScreen(
                     Icon(
                         imageVector = ImageVector.vectorResource(id = R.drawable.error_icon),
                         contentDescription = "Error",
-                        tint = androidx.compose.ui.graphics.Color.Red
+                        tint = Color.Red
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = errorMessagePassword ?: "",
-                        color = androidx.compose.ui.graphics.Color.Red,
+                        color = Color.Red,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -227,8 +246,8 @@ fun LoginScreen(
 
                 Text(
                     text = annotatedText,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        textAlign = TextAlign.Center
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        textAlign = TextAlign.Center, fontSize = 17.sp
                     )
                 )
             }

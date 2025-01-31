@@ -21,8 +21,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.it2161.dit233000D.movieviewer.data.user.UserProfile
 import com.it2161.dit233000D.movieviewer.R
-import com.it2161.dit233000D.movieviewer.data.movie.MovieDao
-import com.it2161.dit233000D.movieviewer.data.movie.MovieDatabase
 import com.it2161.dit233000D.movieviewer.data.user.UserDatabase
 
 import java.util.Calendar
@@ -282,21 +280,12 @@ fun RegisterUserScreen(
                             preferredName = preferredName
                         )
 
-                        // Coroutine to handle user registration and related tasks
                         lifecycleOwner.lifecycleScope.launch {
-                            // Check if it's a new user (async operation in background)
-                            val isNewUser = userProfileDao.getUserByUserName(newUserProfile.userName) == null
-
-                            val movieDao = MovieDatabase.getDatabase(context).movieDao()
-
-
-                            // Insert user into the database
+                            // insert user into database
                             userProfileDao.insertUser(newUserProfile)
 
-                            // Show success message
                             Toast.makeText(context, "Registration successful!", Toast.LENGTH_SHORT).show()
 
-                            // Fetch the user after insertion to check persistence
                             val fetchedUser = userProfileDao.getUserByUserName(newUserProfile.userName)
 
                             if (fetchedUser != null) {
@@ -320,7 +309,7 @@ fun RegisterUserScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Transparent,
-                    contentColor = Color.Black // You can set the text color if needed
+                    contentColor = Color.Black
                 )
             ) {
                 Text("Already have an account? Login")
