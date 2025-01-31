@@ -22,15 +22,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.it2161.dit233000D.movieviewer.api.RetrofitInstance
 import com.it2161.dit233000D.movieviewer.data.movie.MovieItem
-import com.it2161.dit233000D.movieviewer.data.movie.MovieRepository
 import com.it2161.dit233000D.movieviewer.data.user.UserDatabase
 import com.it2161.dit233000D.movieviewer.data.user.UserProfile
-import com.it2161.dit233000D.movieviewer.data.user.UserProfileDao
 import com.it2161.dit233000D.movieviewer.ui.screens.FavoriteMovieScreen
 import com.it2161.dit233000D.movieviewer.ui.screens.LandingScreen
 import com.it2161.dit233000D.movieviewer.ui.screens.LoginScreen
 import com.it2161.dit233000D.movieviewer.ui.screens.MovieDetailScreen
-import com.it2161.dit233000D.movieviewer.ui.screens.MovieListScreen
 import com.it2161.dit233000D.movieviewer.ui.screens.ProfileScreen
 import com.it2161.dit233000D.movieviewer.ui.screens.RegisterUserScreen
 import com.it2161.dit233000D.movieviewer.ui.theme._233000DMovieViewer2Theme
@@ -103,10 +100,6 @@ fun MovieViewerApp() {
                     },
                     onFavoritesClick = { navController.navigate("favorites") }
                 )
-            }
-
-            composable("movieList") {
-                MovieListScreen(navController = navController)
             }
 
             composable("movieDetail/{movieId}") { backStackEntry ->
