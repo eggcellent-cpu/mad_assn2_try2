@@ -21,12 +21,11 @@ data class FavoriteMovieItem(
 @Entity(tableName = "movies")
 data class MovieItem(
     @PrimaryKey val id: Long,
-    val adult: Boolean = false,
+    val adult: Boolean,
     val backdrop_path: String? = null,
     val budget: Int? = 0,
     @TypeConverters(Converters::class)
     val genres: List<Genre>? = emptyList(),
-    val homepage: String? = "Unavailable",
     val original_language: String,
     val original_title: String,
     val overview: String? = "Unavailable",

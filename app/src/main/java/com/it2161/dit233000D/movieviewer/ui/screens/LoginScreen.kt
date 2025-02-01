@@ -234,11 +234,9 @@ fun LoginScreen(
                 }
             ) {
                 val annotatedText = buildAnnotatedString {
-                    // Add "Don’t have an account?" in white
                     withStyle(style = SpanStyle(color = Color.Black)) {
                         append("Don’t have an account? ")
                     }
-                    // Add "Register here." with underline
                     withStyle(style = SpanStyle(color = Color.DarkGray, textDecoration = TextDecoration.Underline)) {
                         append("Register here.")
                     }

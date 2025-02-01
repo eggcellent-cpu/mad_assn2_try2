@@ -22,7 +22,7 @@ interface MovieDao {
 
     // get all movies from the database
     @Query("SELECT * FROM movies")
-    suspend fun getAllMovies(): List<MovieItem>
+    suspend fun getAllDbMovies(): List<MovieItem>
 
     // Insert a favorite movie (assuming FavoriteMovieItem is a distinct entity)
     @Insert(onConflict = OnConflictStrategy.REPLACE)

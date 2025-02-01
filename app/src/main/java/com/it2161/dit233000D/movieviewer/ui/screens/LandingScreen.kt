@@ -28,6 +28,7 @@ import com.it2161.dit233000D.movieviewer.api.RetrofitInstance
 import com.it2161.dit233000D.movieviewer.data.movie.MovieDao
 import com.it2161.dit233000D.movieviewer.data.movie.MovieDatabase
 import com.it2161.dit233000D.movieviewer.data.movie.MovieItem
+import com.it2161.dit233000D.movieviewer.data.movie.MovieRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -49,6 +50,7 @@ fun LandingScreen(
     val upcomingMovies = remember { mutableStateListOf<MovieItem>() }
 
     val movieDao = MovieDatabase.getDatabase(context).movieDao()
+    val repository = MovieRepository.getInstance(context)
 
     var searchQuery by remember { mutableStateOf("") }
     val searchResults = remember { mutableStateListOf<MovieItem>() }
@@ -58,10 +60,10 @@ fun LandingScreen(
 
     // Fetch movies on initial launch
     LaunchedEffect(Unit) {
-        fetchMovies("Popular", popularMovies, context, scope, movieDao)
-        fetchMovies("Top Rated", topRatedMovies, context, scope, movieDao)
-        fetchMovies("Now Playing", nowPlayingMovies, context, scope, movieDao)
-        fetchMovies("Upcoming", upcomingMovies, context, scope, movieDao)
+        fetchMovies("Popular", popularMovies, context, scope, repository, movieDao)
+        fetchMovies("Top Rated", topRatedMovies, context, scope, repository, movieDao)
+        fetchMovies("Now Playing", nowPlayingMovies, context, scope, repository, movieDao)
+        fetchMovies("Upcoming", upcomingMovies, context, scope, repository, movieDao)
     }
 
     // Search movie updates based on search query
@@ -167,7 +169,6 @@ fun LandingScreen(
                                     }
                                 )
                             }
-                            // Add empty spaces if the row is not complete
                             repeat(3 - rowMovies.size) {
                                 Spacer(modifier = Modifier.weight(1f))
                             }
@@ -311,13 +312,13 @@ fun searchMovies(
     }
 }
 
-
 fun fetchMovies(
     category: String,
     movieList: SnapshotStateList<MovieItem>,
     context: Context,
     scope: CoroutineScope,
-    movieDao: MovieDao // Pass MovieDao here
+    repository: MovieRepository,
+    movieDao: MovieDao
 ) {
     val apiKey = try {
         context.packageManager.getApplicationInfo(
@@ -348,18 +349,23 @@ fun fetchMovies(
             }
 
             response?.results?.let { movies ->
-                // Add movies to the UI list
-                movieList.addAll(movies)
+                val detailedMovies = mutableListOf<MovieItem>()
+                // Fetch full details for each movie
+                movies.forEach { movie ->
+                    val movieDetail = apiService.getMovieDetails(movie.id, apiKey)
+                    detailedMovies.add(movieDetail)
+                }
+                // Update UI list
+                movieList.addAll(detailedMovies)
 
                 // Save movies to the database
-                movieDao.insertMovies(movies)
+                movieDao.insertMovies(detailedMovies)
             }
         } catch (e: Exception) {
-            // Handle API fetch failure
             Toast.makeText(context, "Failed to fetch movies: ${e.message}", Toast.LENGTH_SHORT).show()
 
             // Fallback to retrieve movies from the database
-            val dbMovies = movieDao.getAllMovies()
+            val dbMovies = repository.getAllMovies(context, apiKey)
             movieList.addAll(dbMovies)
         }
     }

@@ -111,7 +111,7 @@ fun MovieViewerApp() {
                     val repository = app.movieRepository
 
                     val viewModel: FavoriteMovieViewModel = viewModel(
-                        factory = FavoriteMovieViewModelFactory(repository, userProfile = currentUser)
+                        factory = FavoriteMovieViewModelFactory(repository)
                     )
 
                     // State to handle loading and error

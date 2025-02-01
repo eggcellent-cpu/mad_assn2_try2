@@ -6,18 +6,15 @@ import androidx.lifecycle.viewModelScope
 import com.it2161.dit233000D.movieviewer.data.movie.FavoriteMovieItem
 import com.it2161.dit233000D.movieviewer.data.movie.MovieItem
 import com.it2161.dit233000D.movieviewer.data.movie.MovieRepository
-import com.it2161.dit233000D.movieviewer.data.movie.toFavoriteMovieItem
-import com.it2161.dit233000D.movieviewer.data.user.UserProfile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
-class FavoriteMovieViewModel(private val repository: MovieRepository, userProfile: UserProfile?) : ViewModel() {
+class FavoriteMovieViewModel(private val repository: MovieRepository) : ViewModel() {
 
     private val _favoriteMovies = MutableStateFlow<List<MovieItem>>(emptyList())
     val favoriteMovies: StateFlow<List<MovieItem>> get() = _favoriteMovies
-    val currentUser = userProfile ?: UserProfile(0, "")
 
     // Load favorite movies for a specific user
     fun loadFavoriteMovies(userId: Int) {
@@ -42,18 +39,6 @@ class FavoriteMovieViewModel(private val repository: MovieRepository, userProfil
         viewModelScope.launch {
             repository.removeFavoriteMovie(movie)
             loadFavoriteMovies(movie.userId) // Reload after removal
-        }
-    }
-
-    // Toggle favorite status for a movie
-    fun toggleFavorite(favoriteMovie: FavoriteMovieItem, isFavorite: Boolean) {
-        viewModelScope.launch {
-            if (isFavorite) {
-                repository.addFavoriteMovie(favoriteMovie)
-            } else {
-                repository.removeFavoriteMovie(favoriteMovie)
-            }
-            loadFavoriteMovies(favoriteMovie.userId) // Reload favorites after toggling
         }
     }
 

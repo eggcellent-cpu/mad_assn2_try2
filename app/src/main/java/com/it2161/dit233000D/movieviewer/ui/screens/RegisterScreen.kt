@@ -16,7 +16,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.it2161.dit233000D.movieviewer.data.user.UserProfile
@@ -285,16 +291,6 @@ fun RegisterUserScreen(
                             userProfileDao.insertUser(newUserProfile)
 
                             Toast.makeText(context, "Registration successful!", Toast.LENGTH_SHORT).show()
-
-                            val fetchedUser = userProfileDao.getUserByUserName(newUserProfile.userName)
-
-                            if (fetchedUser != null) {
-                                Log.d("RegisterUserScreen", "User persisted: ${fetchedUser.userName}")
-                            } else {
-                                Log.d("RegisterUserScreen", "User not found after insert.")
-                            }
-
-                            // Navigate to the landing page
                             navController.navigate("landing")
                         }
                     }
@@ -312,9 +308,22 @@ fun RegisterUserScreen(
                     contentColor = Color.Black
                 )
             ) {
-                Text("Already have an account? Login")
-            }
+                val annotatedText = buildAnnotatedString {
+                    withStyle(style = SpanStyle(color = Color.Black)) {
+                        append("Already have an account? ")
+                    }
+                    withStyle(style = SpanStyle(color = Color.DarkGray, textDecoration = TextDecoration.Underline)) {
+                        append("Login here.")
+                    }
+                }
 
+                Text(
+                    text = annotatedText,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        textAlign = TextAlign.Center, fontSize = 17.sp
+                    )
+                )
+            }
         }
     }
 }

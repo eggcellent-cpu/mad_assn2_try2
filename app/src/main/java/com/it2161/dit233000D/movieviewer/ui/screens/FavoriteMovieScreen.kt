@@ -1,7 +1,6 @@
 package com.it2161.dit233000D.movieviewer.ui.screens
 
 import android.content.Context
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,7 +22,6 @@ import com.it2161.dit233000D.movieviewer.data.movie.toFavoriteMovieItem
 import com.it2161.dit233000D.movieviewer.data.user.UserProfile
 import com.it2161.dit233000D.movieviewer.viewmodel.FavoriteMovieViewModel
 import com.it2161.dit233000D.movieviewer.viewmodel.FavoriteMovieViewModelFactory
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,13 +33,13 @@ fun FavoriteMovieScreen(
 ) {
     val repository = remember { MovieRepository.getInstance(context) }
     val viewModel: FavoriteMovieViewModel = viewModel(
-        factory = FavoriteMovieViewModelFactory(repository, userProfile)
+        factory = FavoriteMovieViewModelFactory(repository)
     )
 
     val currentUser = userProfile ?: UserProfile(0, "")
 
     LaunchedEffect(currentUser.id) {
-        viewModel.loadFavoriteMovies(currentUser.id) // Load favorite movies on screen load
+        viewModel.loadFavoriteMovies(currentUser.id) // load favorite movies on screen load
     }
 
     val favoriteMovies = viewModel.favoriteMovies.collectAsState()
@@ -83,12 +81,13 @@ fun FavoriteMovieScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(paddingValues),
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No favorite movies added yet.",
-                        style = MaterialTheme.typography.bodyLarge
+                        text = "There are no favorite movies added yet. Consider adding one!",
+                        style = MaterialTheme.typography.bodyLarge,
+
                     )
                 }
             }
@@ -100,7 +99,7 @@ fun FavoriteMovieScreen(
 fun FavoriteMovieItem(
     movie: MovieItem,
     onClick: () -> Unit,
-    onDelete: (MovieItem) -> Unit // Callback to handle deletion
+    onDelete: (MovieItem) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -133,7 +132,7 @@ fun FavoriteMovieItem(
                 )
             }
         }
-        IconButton(onClick = { onDelete(movie) }) {  // Call onDelete to remove the movie
+        IconButton(onClick = { onDelete(movie) }) {  // remove the movie
             Icon(
                 painter = painterResource(id = R.drawable.delete),
                 contentDescription = "Delete",

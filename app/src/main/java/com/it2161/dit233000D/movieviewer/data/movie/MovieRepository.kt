@@ -11,18 +11,15 @@ import kotlinx.coroutines.withContext
 import java.io.IOException
 
 class MovieRepository private constructor(context: Context) {
-
-    // Initialize the database and DAO
     private val database: MovieDatabase = MovieDatabase.getDatabase(context)
     private val movieDao: MovieDao = database.movieDao()
 
     // Fetch all movies from API or database (fallback on failure)
-    suspend fun getAllMovies(context: Context, apiKey: String, value: String): List<MovieItem> {
+    suspend fun getAllMovies(context: Context, apiKey: String): List<MovieItem> {
         return withContext(Dispatchers.IO) {
-            val allMovies = mutableListOf<MovieItem>() // To store movies from all categories
+            val allMovies = mutableListOf<MovieItem>()
             if (isNetworkAvailable(context)) {
                 try {
-                    // Fetch movies from all categories
                     val categories = listOf("popular", "toprated", "nowplaying", "upcoming")
                     for (category in categories) {
                         val movieResponse = when (category) {
@@ -34,7 +31,7 @@ class MovieRepository private constructor(context: Context) {
                         }
                         movieResponse?.results?.let { allMovies.addAll(it) }
                     }
-                    movieDao.insertMovies(allMovies) // Save all fetched movies to the database
+                    movieDao.insertMovies(allMovies) // save all fetched movies to the database
                 } catch (e: IOException) {
                     Log.e("MovieRepository", "Network error: ${e.message}")
                 } catch (e: Exception) {
@@ -44,15 +41,13 @@ class MovieRepository private constructor(context: Context) {
 
             // Fallback to database if offline or API fetch fails
             if (allMovies.isEmpty()) {
-                return@withContext movieDao.getAllMovies()
+                return@withContext movieDao.getAllDbMovies()
             } else {
                 return@withContext allMovies
             }
         }
     }
 
-
-    // Get the list of favorite movies from local storage as a Flow
     fun getFavoriteMovies(userId: Int): Flow<List<FavoriteMovieItem>> {
         return movieDao.getFavoriteMovies(userId).map { favorites ->
             Log.d("MovieViewerApp", "Fetched favorites for user $userId: ${favorites.size}")
@@ -62,7 +57,7 @@ class MovieRepository private constructor(context: Context) {
 
     // Add a movie to favorites
     suspend fun addFavoriteMovie(movie: FavoriteMovieItem) {
-        movieDao.insertFavoriteMovie(movie) // Insert into the general movie table
+        movieDao.insertFavoriteMovie(movie) // database insert
     }
 
     // Remove a movie from favorites

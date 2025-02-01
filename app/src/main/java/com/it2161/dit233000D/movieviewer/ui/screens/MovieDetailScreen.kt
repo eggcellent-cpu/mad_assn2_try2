@@ -63,7 +63,7 @@ fun MovieDetailScreen(
     }
 
     val viewModel: FavoriteMovieViewModel = viewModel(
-        factory = FavoriteMovieViewModelFactory(repository, userProfile)
+        factory = FavoriteMovieViewModelFactory(repository)
     )
 
     // Function to clean HTML tags from review content
@@ -336,10 +336,11 @@ fun MovieDetailScreen(
                                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
                                                 append("Adult: ")
                                             }
-                                            append(movie.adult.toString())
+                                            append(if (movie.adult) "Yes" else "No")
                                         },
                                         style = MaterialTheme.typography.bodyMedium
                                     )
+
                                     Text(
                                         text = buildAnnotatedString {
                                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
