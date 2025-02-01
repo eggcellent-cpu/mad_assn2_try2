@@ -8,12 +8,12 @@ import androidx.room.TypeConverters
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
-@Entity(tableName = "favorite_movies")
+@Entity(
+    tableName = "favorite_movies",
+    primaryKeys = ["userId", "movieId"] // Composite primary key
+)
 data class FavoriteMovieItem(
-    @PrimaryKey(autoGenerate = true) val favoriteId: Long = 0,
     val movieId: Long,
-
-    // specific user
     val userName: String,
     val userId: Int
 )
@@ -81,7 +81,6 @@ class Converters {
 // convert MovieItem to FavoriteMovieItem
 fun MovieItem.toFavoriteMovieItem(userName: String, userId: Int): FavoriteMovieItem {
     return FavoriteMovieItem(
-        favoriteId = this.id,
         movieId = this.id,
         userId = userId,
         userName = userName,

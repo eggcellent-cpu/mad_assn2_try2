@@ -18,7 +18,6 @@ import coil.compose.AsyncImage
 import com.it2161.dit233000D.movieviewer.R
 import com.it2161.dit233000D.movieviewer.data.movie.MovieItem
 import com.it2161.dit233000D.movieviewer.data.movie.MovieRepository
-import com.it2161.dit233000D.movieviewer.data.movie.toFavoriteMovieItem
 import com.it2161.dit233000D.movieviewer.data.user.UserProfile
 import com.it2161.dit233000D.movieviewer.viewmodel.FavoriteMovieViewModel
 import com.it2161.dit233000D.movieviewer.viewmodel.FavoriteMovieViewModelFactory
@@ -33,13 +32,13 @@ fun FavoriteMovieScreen(
 ) {
     val repository = remember { MovieRepository.getInstance(context) }
     val viewModel: FavoriteMovieViewModel = viewModel(
-        factory = FavoriteMovieViewModelFactory(repository)
+        factory = FavoriteMovieViewModelFactory(repository, userProfile)
     )
 
     val currentUser = userProfile ?: UserProfile(0, "")
 
     LaunchedEffect(currentUser.id) {
-        viewModel.loadFavoriteMovies(currentUser.id) // load favorite movies on screen load
+        viewModel.loadFavoriteMovies() // load favorite movies on screen load
     }
 
     val favoriteMovies = viewModel.favoriteMovies.collectAsState()
@@ -70,9 +69,8 @@ fun FavoriteMovieScreen(
                             movie = favMovie,
                             onClick = { onMovieClick(favMovie.id) },
                             onDelete = {
-                                // Convert MovieItem to FavoriteMovieItem before passing it to onDelete
-                                val favoriteMovie = favMovie.toFavoriteMovieItem(currentUser.userName, currentUser.id)
-                                viewModel.removeFavoriteMovie(favoriteMovie)
+                                // Pass only the movieId to removeFavoriteMovie
+                                viewModel.removeFavoriteMovie(favMovie.id)
                             }
                         )
                     }

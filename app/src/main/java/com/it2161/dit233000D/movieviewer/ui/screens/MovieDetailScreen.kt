@@ -29,7 +29,6 @@ import com.it2161.dit233000D.movieviewer.data.user.UserProfile
 import com.it2161.dit233000D.movieviewer.utils.isNetworkAvailable
 import com.it2161.dit233000D.movieviewer.viewmodel.FavoriteMovieViewModel
 import com.it2161.dit233000D.movieviewer.viewmodel.FavoriteMovieViewModelFactory
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import org.jsoup.Jsoup
 
@@ -63,7 +62,7 @@ fun MovieDetailScreen(
     }
 
     val viewModel: FavoriteMovieViewModel = viewModel(
-        factory = FavoriteMovieViewModelFactory(repository)
+        factory = FavoriteMovieViewModelFactory(repository, userProfile)
     )
 
     // Function to clean HTML tags from review content
@@ -99,7 +98,7 @@ fun MovieDetailScreen(
         }
 
         // Fetch favorite status from the database
-        val isMovieFavorited = viewModel.isMovieFavorited(movieIdLong, currentUser.id)
+        val isMovieFavorited = viewModel.isMovieFavorited(movieIdLong)
         Log.d("MovieViewerApp", "Initial favorite status for movie $movieIdLong: $isMovieFavorited")
         isFavorite.value = isMovieFavorited
 
@@ -174,15 +173,13 @@ fun MovieDetailScreen(
     // Function to toggle favorite status
     fun toggleFavorite(movie: MovieItem) {
         scope.launch {
-            val favoriteMovie = movie.toFavoriteMovieItem(currentUser.userName, currentUser.id)
-
             if (isFavorite.value) {
                 // Remove from favorites
-                viewModel.removeFavoriteMovie(favoriteMovie)
+                viewModel.removeFavoriteMovie(movie.id)
                 Log.d("MovieViewerApp", "Removed favorite - Movie: ${movie.title}, User: ${currentUser.userName}")
             } else {
                 // Add to favorites
-                viewModel.addFavoriteMovie(favoriteMovie)
+                viewModel.addFavoriteMovie(movie)
                 Log.d("MovieViewerApp", "Added favorite - Movie: ${movie.title}, User: ${currentUser.userName}")
             }
 

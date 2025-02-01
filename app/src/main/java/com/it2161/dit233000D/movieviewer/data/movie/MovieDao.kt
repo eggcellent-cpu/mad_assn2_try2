@@ -29,8 +29,8 @@ interface MovieDao {
     suspend fun insertFavoriteMovie(movie: FavoriteMovieItem)
 
     // delete favorite movie (specific user)
-    @Query("DELETE FROM favorite_movies WHERE favoriteId = :movieId AND userId = :userId")
-    suspend fun deleteFavoriteMovie(movieId: Long, userId: Int)
+    @Query("DELETE FROM favorite_movies WHERE userId = :userId AND movieId = :movieId")
+    suspend fun deleteFavoriteMovie(userId: Int, movieId: Long)
 
     // Get all favorite movies as a Flow
     @Query("SELECT * FROM favorite_movies") // Ensure this table exists or modify to match your schema
@@ -40,7 +40,7 @@ interface MovieDao {
     @Query("SELECT * FROM favorite_movies WHERE userId = :userId")
     fun getFavoriteMovies(userId: Int): Flow<List<FavoriteMovieItem>>
 
-    @Query("SELECT * FROM favorite_movies WHERE favoriteId = :movieId AND userId = :userId")
+    @Query("SELECT * FROM favorite_movies WHERE userId = :movieId AND userId = :userId")
     suspend fun getFavoriteMovieById(movieId: Long, userId: Int): FavoriteMovieItem?
 
     @Query("""

@@ -61,8 +61,8 @@ class MovieRepository private constructor(context: Context) {
     }
 
     // Remove a movie from favorites
-    suspend fun removeFavoriteMovie(movie: FavoriteMovieItem) {
-        movieDao.deleteFavoriteMovie(movie.favoriteId, movie.userId)
+    suspend fun removeFavoriteMovie(userId: Int, movieId: Long) {
+        movieDao.deleteFavoriteMovie(userId, movieId)
     }
 
     fun getFavoriteMoviesWithDetails(userId: Int): Flow<List<MovieItem>> {
