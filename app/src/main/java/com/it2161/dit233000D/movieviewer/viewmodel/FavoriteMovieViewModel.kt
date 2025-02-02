@@ -36,7 +36,7 @@ class FavoriteMovieViewModel(private val repository: MovieRepository, userProfil
                 movieId = movie.id
             )
             repository.addFavoriteMovie(favoriteMovie)
-            loadFavoriteMovies() // Reload favorites after adding
+            loadFavoriteMovies() // reload favorites after adding
         }
     }
 
@@ -44,7 +44,7 @@ class FavoriteMovieViewModel(private val repository: MovieRepository, userProfil
     fun removeFavoriteMovie(movieId: Long) {
         viewModelScope.launch {
             repository.removeFavoriteMovie(currentUser.id, movieId)
-            loadFavoriteMovies() // Reload after removal
+            loadFavoriteMovies() // reload after removal
         }
     }
 

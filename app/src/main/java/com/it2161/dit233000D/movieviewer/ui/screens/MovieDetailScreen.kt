@@ -211,7 +211,7 @@ fun MovieDetailScreen(
                                 if (isFavorite.value) R.drawable.heart_check else R.drawable.favorite
                             ),
                             contentDescription = "Favorite",
-                            tint = if (isFavorite.value) Color.Red else Color.Black // Make heart red when favorited
+                            tint = if (isFavorite.value) Color.Red else Color.Black
                         )
                     }
                 }

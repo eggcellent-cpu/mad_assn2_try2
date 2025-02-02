@@ -350,21 +350,21 @@ fun fetchMovies(
 
             response?.results?.let { movies ->
                 val detailedMovies = mutableListOf<MovieItem>()
-                // Fetch full details for each movie
+                // fetch full details for each movie
                 movies.forEach { movie ->
                     val movieDetail = apiService.getMovieDetails(movie.id, apiKey)
                     detailedMovies.add(movieDetail)
                 }
-                // Update UI list
+                // update UI list
                 movieList.addAll(detailedMovies)
 
-                // Save movies to the database
+                // save movies to the database
                 movieDao.insertMovies(detailedMovies)
             }
         } catch (e: Exception) {
             Toast.makeText(context, "Failed to fetch movies: ${e.message}", Toast.LENGTH_SHORT).show()
 
-            // Fallback to retrieve movies from the database
+            // fallback to retrieve movies from the database
             val dbMovies = repository.getAllMovies(context, apiKey)
             movieList.addAll(dbMovies)
         }
