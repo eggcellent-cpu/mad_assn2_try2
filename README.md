@@ -1,7 +1,9 @@
 PopCornMovie 🎬
+
 A movie viewer app built using Jetpack Compose, Kotlin, and Room Database.
 
-Project Overview
+<b>Project Overview</b>
+
 PopCornMovie allows users to:
 ✅ View movie details using The Movie Database (TMDB) API
 ✅ Register, log in, and manage their profile
