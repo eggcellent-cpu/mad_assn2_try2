@@ -22,10 +22,8 @@ PopCornMovie allows users to:
 <b>Installation & Setup</b>
 1. Clone the repository:
    
-  // git clone https://github.com/yourusername/PopCornMovie.git
-  
-  // cd PopCornMovie
-  
+  // git clone https://github.com/eggcellent/mad_assn2_try2.git
+    
 3. Open in Android Studio (Recommended Emulator: Pixel 8 Pro, API 35)
 4. Run the app on an emulator or physical device
 5. Ensure internet access for movie data retrieval
