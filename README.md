@@ -1,4 +1,4 @@
-PopCornMovie 🎬
+<b><u>PopCornMovie 🎬</u></b>
 
 A movie viewer app built using Jetpack Compose, Kotlin, and Room Database.
 
