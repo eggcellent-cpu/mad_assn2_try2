@@ -11,18 +11,21 @@ PopCornMovie allows users to:
 ✅ Mark favorite movies for easy access
 ✅ Enjoy offline support with Room Database
 
-Tech Stack
+<b>Tech Stack</b>
 - Languages: Kotlin
 - Frameworks: Jetpack Compose, Room
 - Database: SQLite
 - API: TMDB API
   
-Tools: Android Studio, Retrofit, ViewModel
+<b>Tools</b>: Android Studio, Retrofit, ViewModel
 
-Installation & Setup
+<b>Installation & Setup</b>
 1. Clone the repository:
+   
   // git clone https://github.com/yourusername/PopCornMovie.git
+  
   // cd PopCornMovie
-2. Open in Android Studio (Recommended Emulator: Pixel 8 Pro, API 35)
-3. Run the app on an emulator or physical device
-4. Ensure internet access for movie data retrieval
+  
+3. Open in Android Studio (Recommended Emulator: Pixel 8 Pro, API 35)
+4. Run the app on an emulator or physical device
+5. Ensure internet access for movie data retrieval
